@@ -12,21 +12,33 @@ class ProjectController extends Controller
 {
     public function index()
     {
-        $projects = Project::with('order.user')->latest()->get();
+        $projects = Project::with([
+            'order.user',
+            'order.items.product',
+        ])->latest()->get();
 
         return view('admin.projects.index', compact('projects'));
     }
 
     public function create($order_id)
     {
-        $order = Order::with('product', 'user')->findOrFail($order_id);
+        $order = Order::with([
+            'user',
+            'product',
+            'variant',
+            'selectedVolume',
+            'items.product',
+            'items.variant',
+            'items.selectedVolume',
+            'project',
+        ])->findOrFail($order_id);
 
         if ($order->status_verify !== 'approved') {
             return back()->with('error', 'Project hanya bisa dibuat dari order yang sudah approved.');
         }
 
         if ($order->project) {
-            return redirect('/admin/projects/'.$order->project->id)
+            return redirect('/admin/projects/' . $order->project->id)
                 ->with('error', 'Project untuk order ini sudah dibuat.');
         }
 
@@ -42,10 +54,21 @@ class ProjectController extends Controller
             'due_date' => 'required|date|after_or_equal:start_date',
         ]);
 
-        $order = Order::findOrFail($request->order_id);
+        $order = Order::with([
+            'product',
+            'items.product',
+            'items.variant',
+            'items.selectedVolume',
+            'project',
+        ])->findOrFail($request->order_id);
 
         if ($order->status_verify !== 'approved') {
             return back()->with('error', 'Order belum approved.');
+        }
+
+        if ($order->project) {
+            return redirect('/admin/projects/' . $order->project->id)
+                ->with('error', 'Project untuk order ini sudah dibuat.');
         }
 
         $project = Project::create([
@@ -57,26 +80,172 @@ class ProjectController extends Controller
             'progress_percent' => 0,
         ]);
 
-        $defaultStages = [
-        ['Persiapan Material', 10],
-        ['Pembuatan Cetakan / Mould', 15],
-        ['Pengecoran', 20],
-        ['Curing Beton', 15],
-        ['Quality Control', 15],
-        ['Pengiriman', 10],
-        ['Dokumentasi & Serah Terima', 15],
-    ];
+        $this->createStagesForProject($project);
 
-    foreach ($defaultStages as [$name, $weight]) {
-        \App\Models\ProjectStage::create([
-            'project_id' => $project->id,
-            'stage_name' => $name,
-            'weight_percent' => $weight,
-            'status' => 'todo',
-        ]);
+        return redirect('/admin/projects')
+            ->with('success', 'Project berhasil dibuat beserta tahapan pekerjaan sesuai produk.');
     }
 
-        return redirect('/admin/projects')->with('success', 'Project berhasil dibuat beserta tahapan pekerjaan.');
+    private function createStagesForProject(Project $project): void
+    {
+        $project->load([
+            'order.product',
+            'order.items.product',
+        ]);
+
+        $order = $project->order;
+
+        if (!$order) {
+            return;
+        }
+
+        if ($order->items->count() > 0) {
+            foreach ($order->items as $item) {
+                $stages = $this->getStagesByProductName($item->product->product_name ?? '');
+
+                foreach ($stages as $stage) {
+                    ProjectStage::create([
+                        'project_id' => $project->id,
+                        'order_item_id' => $item->id,
+                        'stage_name' => $stage['name'],
+                        'weight_percent' => $stage['weight'],
+                        'status' => 'todo',
+                    ]);
+                }
+            }
+
+            return;
+        }
+
+        $stages = $this->getStagesByProductName($order->product->product_name ?? '');
+
+        foreach ($stages as $stage) {
+            ProjectStage::create([
+                'project_id' => $project->id,
+                'order_item_id' => null,
+                'stage_name' => $stage['name'],
+                'weight_percent' => $stage['weight'],
+                'status' => 'todo',
+            ]);
+        }
+    }
+
+    private function getStagesByProductName(?string $productName): array
+    {
+        $name = strtolower($productName ?? '');
+
+        if (str_contains($name, 'spun')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pembuatan Tulangan Spiral', 'weight' => 15],
+                ['name' => 'Pemasangan Cetakan Spun Pile', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Proses Spinning', 'weight' => 15],
+                ['name' => 'Steam / Curing Beton', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        if (str_contains($name, 'girder')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Perakitan Tulangan & Tendon', 'weight' => 20],
+                ['name' => 'Pemasangan Bekisting', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Prestressing / Stressing', 'weight' => 10],
+                ['name' => 'Steam Curing', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        if (str_contains($name, 'box')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pembuatan Bekisting Box Culvert', 'weight' => 15],
+                ['name' => 'Pemasangan Tulangan', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Curing Beton', 'weight' => 15],
+                ['name' => 'Pembongkaran Cetakan', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        if (str_contains($name, 'u-ditch') || str_contains($name, 'uditch')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pembuatan Cetakan U-Ditch', 'weight' => 15],
+                ['name' => 'Pemasangan Tulangan', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Curing Beton', 'weight' => 15],
+                ['name' => 'Pembongkaran Cetakan', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        if (str_contains($name, 'barrier')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pemasangan Tulangan', 'weight' => 15],
+                ['name' => 'Persiapan Cetakan', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Curing Beton', 'weight' => 15],
+                ['name' => 'Finishing Permukaan', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        if (str_contains($name, 'tiang')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pembuatan Tulangan', 'weight' => 15],
+                ['name' => 'Pemasangan Cetakan', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Proses Spinning', 'weight' => 15],
+                ['name' => 'Steam Curing', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        if (str_contains($name, 'panel') || str_contains($name, 'pagar')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pemasangan Tulangan', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Curing Beton', 'weight' => 15],
+                ['name' => 'Finishing Permukaan', 'weight' => 15],
+                ['name' => 'Quality Control', 'weight' => 15],
+                ['name' => 'Pengiriman', 'weight' => 10],
+            ];
+        }
+
+        if (str_contains($name, 'sheet')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pembuatan Tulangan', 'weight' => 15],
+                ['name' => 'Pemasangan Cetakan', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Steam Curing', 'weight' => 15],
+                ['name' => 'Finishing', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        return [
+            ['name' => 'Persiapan Material', 'weight' => 10],
+            ['name' => 'Persiapan Produksi', 'weight' => 15],
+            ['name' => 'Pengecoran Beton', 'weight' => 20],
+            ['name' => 'Curing Beton', 'weight' => 20],
+            ['name' => 'Quality Control', 'weight' => 15],
+            ['name' => 'Finishing', 'weight' => 10],
+            ['name' => 'Pengiriman', 'weight' => 10],
+        ];
     }
 
     public function show($id)
@@ -86,10 +255,16 @@ class ProjectController extends Controller
             'order.product',
             'order.variant',
             'order.selectedVolume',
+            'order.items.product',
+            'order.items.variant',
+            'order.items.selectedVolume',
             'assignments.employee',
             'logs',
             'workUpdates',
             'stages.employee',
+            'stages.orderItem.product',
+            'stages.orderItem.variant',
+            'stages.orderItem.selectedVolume',
         ])->findOrFail($id);
 
         $employees = Employee::all();
@@ -100,7 +275,13 @@ class ProjectController extends Controller
     public function monitoring($id)
     {
         $project = Project::with([
+            'order.user',
             'order.product',
+            'order.variant',
+            'order.selectedVolume',
+            'order.items.product',
+            'order.items.variant',
+            'order.items.selectedVolume',
             'logs' => function ($q) {
                 $q->oldest();
             },
@@ -109,11 +290,14 @@ class ProjectController extends Controller
             },
             'workUpdates.employee',
             'stages.employee',
+            'stages.orderItem.product',
+            'stages.orderItem.variant',
+            'stages.orderItem.selectedVolume',
         ])
-        ->whereHas('order', function ($q) {
-            $q->where('user_id', auth()->id());
-        })
-        ->findOrFail($id);
+            ->whereHas('order', function ($q) {
+                $q->where('user_id', auth()->id());
+            })
+            ->findOrFail($id);
 
         return view('client.projects.monitoring', compact('project'));
     }
@@ -122,29 +306,24 @@ class ProjectController extends Controller
     {
         $projects = Project::with([
             'order.user',
-            'order.product',
+            'order.items.product',
             'assignments.employee',
-            'workUpdates'
+            'workUpdates',
         ])->latest()->get();
 
-        // PROJECT YANG ADA PENDING VALIDATION
         $needApprovalProjects = $projects->filter(function ($project) {
             return $project->workUpdates
                 ->where('validation_status', 'pending')
                 ->count() > 0;
         });
 
-        // TODO
         $todoProjects = $projects->where('status', 'not_started');
 
         $inProgressProjects = $projects->filter(function ($project) {
             return $project->status === 'in_progress'
-                && $project->workUpdates
-                    ->where('validation_status', 'pending')
-                    ->count() == 0;
+                && $project->workUpdates->where('validation_status', 'pending')->count() === 0;
         });
 
-        // DONE
         $doneProjects = $projects->where('status', 'done');
 
         return view('admin.projects.board', compact(
@@ -162,8 +341,12 @@ class ProjectController extends Controller
                 $q2->where('user_id', auth()->id());
             });
         })
-        ->with(['order', 'stages'])
-        ->get();
+            ->with([
+                'order.items.product',
+                'stages.orderItem.product',
+                'stages.employee',
+            ])
+            ->get();
 
         return view('pegawai.projects.index', compact('projects'));
     }
@@ -171,9 +354,17 @@ class ProjectController extends Controller
     public function pegawaiShow($id)
     {
         $project = Project::with([
-            'order',
+            'order.user',
+            'order.product',
+            'order.variant',
+            'order.selectedVolume',
+            'order.items.product',
+            'order.items.variant',
             'logs',
             'stages.employee',
+            'stages.orderItem.product',
+            'stages.orderItem.variant',
+            'stages.orderItem.selectedVolume',
         ])
             ->whereHas('assignments', function ($q) {
                 $q->whereHas('employee', function ($q2) {
@@ -189,10 +380,11 @@ class ProjectController extends Controller
     {
         $projects = Project::with([
             'order.user',
-            'order.product',
+            'order.items.product',
             'assignments.employee',
             'workUpdates',
             'stages.employee',
+            'stages.orderItem.product',
         ])->latest()->get();
 
         return view('pimpinan.projects.index', compact('projects'));

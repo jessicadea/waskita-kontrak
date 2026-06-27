@@ -1,4 +1,7 @@
-@props(['variant' => 'primary'])
+@props([
+    'variant' => 'primary',
+    'type' => 'submit',
+])
 
 @php
 $classes = match($variant) {
@@ -10,6 +13,8 @@ $classes = match($variant) {
 };
 @endphp
 
-<button {{ $attributes->merge(['class' => "px-4 py-2 rounded-xl text-sm font-medium transition $classes"]) }}>
+<button type="{{ $type }}" {{ $attributes->merge([
+    'class' => "px-4 py-2 rounded-xl text-sm font-medium transition $classes"
+]) }}>
     {{ $slot }}
 </button>

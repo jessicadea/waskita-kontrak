@@ -79,7 +79,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
     Route::get('/projects/create/{order_id}', [ProjectController::class, 'create'])->name('projects.create');
-    Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
+    Route::post('/projects', function () {
+        dd('ROUTE POST PROJECT MASUK');
+    })->name('projects.store');
     Route::get('/projects/{id}', [ProjectController::class, 'show'])->name('projects.show');
 
     Route::post('/projects/{id}/assign', [ProjectAssignmentController::class, 'store'])->name('projects.assign');

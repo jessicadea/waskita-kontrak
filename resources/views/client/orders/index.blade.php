@@ -21,14 +21,13 @@
             </a>
 
             <a href="/reports/client/orders/download"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm font-semibold hover:bg-slate-50">
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm font-semibold hover:bg-slate-50">
                 ⬇ Export
             </a>
         </div>
 
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
 
-            {{-- SEARCH FILTER --}}
             <div class="p-4 border-b border-slate-200 flex flex-col md:flex-row gap-3">
                 <div class="flex-1 relative">
                     <input type="text"
@@ -41,14 +40,13 @@
                 </button>
             </div>
 
-            {{-- TABLE --}}
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-slate-50 text-slate-600">
                         <tr class="border-b border-slate-200 text-left">
                             <th class="px-4 py-3 font-semibold">No. Order</th>
                             <th class="px-4 py-3 font-semibold">Produk</th>
-                            <th class="px-4 py-3 font-semibold">Volume</th>
+                            <th class="px-4 py-3 font-semibold">Quantity</th>
                             <th class="px-4 py-3 font-semibold">Project</th>
                             <th class="px-4 py-3 font-semibold">Tanggal</th>
                             <th class="px-4 py-3 font-semibold">Status</th>
@@ -58,24 +56,49 @@
 
                     <tbody class="divide-y divide-slate-100">
                         @forelse($orders as $order)
-                            <tr class="hover:bg-slate-50 transition">
-                                <td class="px-4 py-4 font-semibold text-slate-900">
+                            <tr class="hover:bg-slate-50 transition align-top">
+                                <td class="px-4 py-4 font-semibold text-slate-900 whitespace-nowrap">
                                     ORD-{{ $order->created_at->format('Y') }}-{{ str_pad($order->id, 4, '0', STR_PAD_LEFT) }}
                                 </td>
 
                                 <td class="px-4 py-4">
-                                    {{ $order->product->product_name }}
+                                    @forelse($order->items as $item)
+                                        <div class="mb-1">
+                                            <span class="font-semibold text-slate-900">
+                                                {{ $item->product->product_name ?? '-' }}
+                                            </span>
+
+                                            @if($item->variant)
+                                                <span class="text-xs text-gray-500">
+                                                    / {{ $item->variant->type_name }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @empty
+                                        <span class="text-gray-400">-</span>
+                                    @endforelse
                                 </td>
 
                                 <td class="px-4 py-4 text-slate-600">
-                                    {{ $order->volume }} unit
+                                    @forelse($order->items as $item)
+                                        <div class="mb-1">
+                                            {{ $item->quantity }} unit
+                                        </div>
+                                    @empty
+                                        <span class="text-gray-400">-</span>
+                                    @endforelse
                                 </td>
 
                                 <td class="px-4 py-4">
-                                    {{ $order->project_name }}
+                                    <div class="font-semibold text-slate-900">
+                                        {{ $order->project_name }}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        {{ $order->project_location }}
+                                    </div>
                                 </td>
 
-                                <td class="px-4 py-4 text-slate-600">
+                                <td class="px-4 py-4 text-slate-600 whitespace-nowrap">
                                     {{ $order->created_at->format('d M Y') }}
                                 </td>
 
@@ -98,7 +121,7 @@
                                     @endif
                                 </td>
 
-                                <td class="px-4 py-4">
+                                <td class="px-4 py-4 whitespace-nowrap">
                                     <a href="/client/orders/{{ $order->id }}"
                                        class="inline-flex items-center gap-2 text-slate-900 font-semibold hover:text-blue-600">
                                         👁 Detail
@@ -125,7 +148,6 @@
                 </table>
             </div>
 
-            {{-- FOOTER / PAGINATION STYLE --}}
             <div class="px-4 py-4 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-3">
                 <p class="text-sm text-gray-500">
                     Menampilkan {{ $orders->count() }} order

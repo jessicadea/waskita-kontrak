@@ -3,18 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\ProjectStage;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
     public function clientIndex()
     {
-        $orders = Order::with('product')
+        $orders = Order::with([
+            'items.product',
+            'items.variant',
+            'items.selectedVolume',
+            'project',
+        ])
             ->where('user_id', auth()->id())
             ->latest()
             ->get();
@@ -24,7 +31,13 @@ class OrderController extends Controller
 
     public function index()
     {
-        $orders = Order::with(['user', 'product'])
+        $orders = Order::with([
+            'user',
+            'items.product',
+            'items.variant',
+            'items.selectedVolume',
+            'project',
+        ])
             ->latest()
             ->get();
 
@@ -41,55 +54,73 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'variant_id' => 'required|exists:product_variants,id',
-            'volume_id' => 'required|exists:product_variant_volumes,id',
-            'quantity' => 'required|integer|min:1',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.variant_id' => 'required|exists:product_variants,id',
+            'items.*.volume_id' => 'required|exists:product_variant_volumes,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.product_spec' => 'nullable|string',
 
             'company_name' => 'required|string|max:255',
             'company_type' => 'required|string|max:255',
             'project_name' => 'required|string|max:255',
             'project_location' => 'required|string|max:255',
-            'product_spec' => 'required|string',
             'delivery_cond' => 'required|string|max:255',
             'delivery_date' => 'required|date|after_or_equal:' . now()->addDays(30)->format('Y-m-d'),
         ], [
             'delivery_date.after_or_equal' => 'Tanggal pengiriman minimal 30 hari setelah tanggal pemesanan.',
         ]);
 
-        Order::create([
-            'user_id' => auth()->id(),
+        DB::transaction(function () use ($request) {
+            $firstItem = $request->items[0];
 
-            'product_id' => $request->product_id,
-            'variant_id' => $request->variant_id,
-            'volume_id' => $request->volume_id,
-            'quantity' => $request->quantity,
+            $order = Order::create([
+                'user_id' => auth()->id(),
 
-            'requires_acceleration' => $request->boolean('requires_acceleration'),
+                // Kolom lama tetap diisi agar fitur lama tidak error
+                'product_id' => $firstItem['product_id'],
+                'variant_id' => $firstItem['variant_id'],
+                'volume_id' => $firstItem['volume_id'],
+                'quantity' => $firstItem['quantity'],
+                'volume' => $firstItem['quantity'],
+                'product_spec' => $firstItem['product_spec'] ?? '-',
 
-            'volume' => $request->quantity,
+                'requires_acceleration' => $request->boolean('requires_acceleration'),
 
-            'company_name' => $request->company_name,
-            'company_type' => $request->company_type,
-            'project_name' => $request->project_name,
-            'project_location' => $request->project_location,
-            'product_spec' => $request->product_spec,
-            'delivery_cond' => $request->delivery_cond,
-            'delivery_date' => $request->delivery_date,
-            'status_verify' => 'pending',
-        ]);
+                'company_name' => $request->company_name,
+                'company_type' => $request->company_type,
+                'project_name' => $request->project_name,
+                'project_location' => $request->project_location,
+                'delivery_cond' => $request->delivery_cond,
+                'delivery_date' => $request->delivery_date,
+                'status_verify' => 'pending',
+            ]);
 
-        return redirect('/client/orders')->with('success', 'Order berhasil dibuat dan menunggu verifikasi admin.');
+            foreach ($request->items as $item) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $item['product_id'],
+                    'variant_id' => $item['variant_id'],
+                    'volume_id' => $item['volume_id'],
+                    'quantity' => $item['quantity'],
+                    'volume' => $item['quantity'],
+                    'product_spec' => $item['product_spec'] ?? '-',
+                ]);
+            }
+        });
+
+        return redirect('/client/orders')
+            ->with('success', 'Order berhasil dibuat dan menunggu verifikasi admin.');
     }
 
     public function show($id)
     {
         if (auth()->user()->role === 'client') {
             $order = Order::with([
-                'product',
-                'variant',
-                'selectedVolume',
-                'project'
+                'items.product',
+                'items.variant',
+                'items.selectedVolume',
+                'project',
             ])
                 ->where('user_id', auth()->id())
                 ->findOrFail($id);
@@ -98,11 +129,11 @@ class OrderController extends Controller
         }
 
         $order = Order::with([
+            'items.product',
+            'items.variant',
+            'items.selectedVolume',
             'user',
-            'product',
-            'variant',
-            'selectedVolume',
-            'project'
+            'project.stages',
         ])->findOrFail($id);
 
         if (
@@ -126,7 +157,7 @@ class OrderController extends Controller
             $order->project->stages()->count() === 0
         ) {
             $this->createDefaultProjectStages($order->project);
-            $order->load('project');
+            $order->load('project.stages');
         }
 
         return view('admin.orders.show', compact('order'));
@@ -144,7 +175,10 @@ class OrderController extends Controller
             'product',
             'variant',
             'selectedVolume',
-            'project'
+            'items.product',
+            'items.variant',
+            'items.selectedVolume',
+            'project.stages',
         ])->findOrFail($id);
 
         $order->update([
@@ -183,24 +217,160 @@ class OrderController extends Controller
 
     private function createDefaultProjectStages(Project $project)
     {
-        $defaultStages = [
-            ['Persiapan Material', 10],
-            ['Pembuatan Cetakan / Mould', 15],
-            ['Pengecoran', 10],
-            ['Curing Beton', 15],
-            ['Quality Control', 15],
-            ['Pengiriman', 10],
-            ['Dokumentasi & Serah Terima', 10],
-        ];
+        $project->load([
+            'order.product',
+            'order.items.product',
+        ]);
 
-        foreach ($defaultStages as [$name, $weight]) {
+        $order = $project->order;
+
+        if ($order && $order->items->count() > 0) {
+            foreach ($order->items as $item) {
+                $stages = $this->getStagesByProductName($item->product->product_name ?? '');
+
+                foreach ($stages as $stage) {
+                    ProjectStage::create([
+                        'project_id' => $project->id,
+                        'order_item_id' => $item->id,
+                        'stage_name' => $stage['name'],
+                        'weight_percent' => $stage['weight'],
+                        'status' => 'todo',
+                    ]);
+                }
+            }
+
+            return;
+        }
+
+        $stages = $this->getStagesByProductName($order->product->product_name ?? '');
+
+        foreach ($stages as $stage) {
             ProjectStage::create([
                 'project_id' => $project->id,
-                'stage_name' => $name,
-                'weight_percent' => $weight,
+                'order_item_id' => null,
+                'stage_name' => $stage['name'],
+                'weight_percent' => $stage['weight'],
                 'status' => 'todo',
             ]);
         }
+    }
+
+    private function getStagesByProductName(?string $productName): array
+    {
+        $name = strtolower($productName ?? '');
+
+        if (str_contains($name, 'spun')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pembuatan Tulangan Spiral', 'weight' => 15],
+                ['name' => 'Pemasangan Cetakan Spun Pile', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Proses Spinning', 'weight' => 15],
+                ['name' => 'Steam / Curing Beton', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        if (str_contains($name, 'girder')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Perakitan Tulangan & Tendon', 'weight' => 20],
+                ['name' => 'Pemasangan Bekisting', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Prestressing / Stressing', 'weight' => 10],
+                ['name' => 'Steam Curing', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        if (str_contains($name, 'box')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pembuatan Bekisting Box Culvert', 'weight' => 15],
+                ['name' => 'Pemasangan Tulangan', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Curing Beton', 'weight' => 15],
+                ['name' => 'Pembongkaran Cetakan', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        if (str_contains($name, 'u-ditch') || str_contains($name, 'uditch')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pembuatan Cetakan U-Ditch', 'weight' => 15],
+                ['name' => 'Pemasangan Tulangan', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Curing Beton', 'weight' => 15],
+                ['name' => 'Pembongkaran Cetakan', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        if (str_contains($name, 'barrier')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pemasangan Tulangan', 'weight' => 15],
+                ['name' => 'Persiapan Cetakan', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Curing Beton', 'weight' => 15],
+                ['name' => 'Finishing Permukaan', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        if (str_contains($name, 'tiang')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pembuatan Tulangan', 'weight' => 15],
+                ['name' => 'Pemasangan Cetakan', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Proses Spinning', 'weight' => 15],
+                ['name' => 'Steam Curing', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        if (str_contains($name, 'panel') || str_contains($name, 'pagar')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pemasangan Tulangan', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Curing Beton', 'weight' => 15],
+                ['name' => 'Finishing Permukaan', 'weight' => 15],
+                ['name' => 'Quality Control', 'weight' => 15],
+                ['name' => 'Pengiriman', 'weight' => 10],
+            ];
+        }
+
+        if (str_contains($name, 'sheet')) {
+            return [
+                ['name' => 'Persiapan Material', 'weight' => 10],
+                ['name' => 'Pembuatan Tulangan', 'weight' => 15],
+                ['name' => 'Pemasangan Cetakan', 'weight' => 15],
+                ['name' => 'Pengecoran Beton', 'weight' => 20],
+                ['name' => 'Steam Curing', 'weight' => 15],
+                ['name' => 'Finishing', 'weight' => 10],
+                ['name' => 'Quality Control', 'weight' => 10],
+                ['name' => 'Pengiriman', 'weight' => 5],
+            ];
+        }
+
+        return [
+            ['name' => 'Persiapan Material', 'weight' => 10],
+            ['name' => 'Persiapan Produksi', 'weight' => 15],
+            ['name' => 'Pengecoran Beton', 'weight' => 20],
+            ['name' => 'Curing Beton', 'weight' => 20],
+            ['name' => 'Quality Control', 'weight' => 15],
+            ['name' => 'Finishing', 'weight' => 10],
+            ['name' => 'Pengiriman', 'weight' => 10],
+        ];
     }
 
     private function generateContractPdf(Order $order)
@@ -210,6 +380,9 @@ class OrderController extends Controller
             'product',
             'variant',
             'selectedVolume',
+            'items.product',
+            'items.variant',
+            'items.selectedVolume',
         ]);
 
         $fileName = 'contract-order-' . $order->id . '-' . now()->format('YmdHis') . '.pdf';
@@ -243,7 +416,12 @@ class OrderController extends Controller
 
     public function contracts()
     {
-        $orders = Order::with(['product', 'project'])
+        $orders = Order::with([
+            'items.product',
+            'items.variant',
+            'items.selectedVolume',
+            'project',
+        ])
             ->where('user_id', auth()->id())
             ->whereNotNull('contract_file')
             ->latest()

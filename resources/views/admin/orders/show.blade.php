@@ -25,12 +25,9 @@
                 <div class="flex items-start gap-3">
                     <div class="text-2xl">⚡</div>
                     <div>
-                        <p class="font-bold text-yellow-800">
-                            Percepatan Produksi Diajukan
-                        </p>
+                        <p class="font-bold text-yellow-800">Percepatan Produksi Diajukan</p>
                         <p class="text-sm text-yellow-700 mt-1">
-                            Client mengajukan percepatan produksi karena estimasi waktu produksi melebihi kapasitas normal.
-                            Pesanan ini memerlukan peninjauan admin sebelum disetujui.
+                            Client mengajukan percepatan produksi dan pesanan ini memerlukan peninjauan admin sebelum disetujui.
                         </p>
                     </div>
                 </div>
@@ -39,10 +36,8 @@
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-            {{-- MAIN DETAIL --}}
             <div class="xl:col-span-2 space-y-6">
 
-                {{-- ORDER INFO --}}
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                     <div class="flex justify-between items-start gap-4 mb-6">
                         <div>
@@ -83,35 +78,13 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm">
                         <div class="bg-slate-50 rounded-xl p-4">
                             <p class="text-gray-500">Client</p>
-                            <p class="font-semibold text-slate-900">{{ $order->user->name }}</p>
+                            <p class="font-semibold text-slate-900">{{ $order->user->name ?? '-' }}</p>
                         </div>
 
                         <div class="bg-slate-50 rounded-xl p-4">
                             <p class="text-gray-500">Perusahaan</p>
                             <p class="font-semibold text-slate-900">{{ $order->company_name }}</p>
                             <p class="text-xs text-gray-500">{{ $order->company_type }}</p>
-                        </div>
-
-                        <div class="bg-slate-50 rounded-xl p-4">
-                            <p class="text-gray-500">Produk</p>
-                            <p class="font-semibold text-slate-900">{{ $order->product->product_name }}</p>
-                            <p class="text-xs text-gray-500">
-                                Type: {{ $order->variant->type_name ?? '-' }}
-                            </p>
-                        </div>
-
-                        <div class="bg-slate-50 rounded-xl p-4">
-                            <p class="text-gray-500">Volume & Quantity</p>
-                            <p class="font-semibold text-slate-900">
-                                @if($order->selectedVolume)
-                                    {{ $order->selectedVolume->volume_value }} {{ $order->selectedVolume->unit }}
-                                @else
-                                    {{ $order->volume }}
-                                @endif
-                            </p>
-                            <p class="text-xs text-gray-500">
-                                Quantity: {{ $order->quantity ?? '-' }}
-                            </p>
                         </div>
 
                         <div class="bg-slate-50 rounded-xl p-4">
@@ -126,14 +99,63 @@
                     </div>
 
                     <div class="mt-6">
-                        <p class="text-sm font-semibold text-slate-900 mb-2">Spesifikasi / Catatan</p>
-                        <div class="bg-slate-50 rounded-xl p-4 text-sm text-gray-600">
-                            {{ $order->product_spec }}
+                        <div class="flex justify-between items-center mb-3">
+                            <p class="text-sm font-semibold text-slate-900">Daftar Produk dalam Kontrak</p>
+                            <span class="text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                                {{ $order->items->count() }} Produk
+                            </span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm border border-slate-200 rounded-xl overflow-hidden">
+                                <thead class="bg-slate-50 text-slate-600">
+                                    <tr class="text-left">
+                                        <th class="border px-3 py-2 font-semibold">No</th>
+                                        <th class="border px-3 py-2 font-semibold">Produk</th>
+                                        <th class="border px-3 py-2 font-semibold">Type</th>
+                                        <th class="border px-3 py-2 font-semibold">Volume / Ukuran</th>
+                                        <th class="border px-3 py-2 font-semibold">Quantity</th>
+                                        <th class="border px-3 py-2 font-semibold">Spesifikasi</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @forelse($order->items as $item)
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="border px-3 py-2">{{ $loop->iteration }}</td>
+                                            <td class="border px-3 py-2 font-semibold text-slate-900">
+                                                {{ $item->product->product_name ?? '-' }}
+                                            </td>
+                                            <td class="border px-3 py-2">
+                                                {{ $item->variant->type_name ?? '-' }}
+                                            </td>
+                                            <td class="border px-3 py-2">
+                                                @if($item->selectedVolume)
+                                                    {{ $item->selectedVolume->volume_value }} {{ $item->selectedVolume->unit }}
+                                                @else
+                                                    {{ $item->volume }}
+                                                @endif
+                                            </td>
+                                            <td class="border px-3 py-2">
+                                                {{ $item->quantity }} unit
+                                            </td>
+                                            <td class="border px-3 py-2">
+                                                {{ $item->product_spec ?: '-' }}
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="border px-3 py-4 text-center text-gray-500">
+                                                Belum ada produk pada order ini.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
 
-                {{-- VERIFICATION --}}
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                     <h3 class="text-lg font-bold text-slate-900 mb-4">Verifikasi Order</h3>
 
@@ -168,10 +190,8 @@
 
             </div>
 
-            {{-- SIDE PANEL --}}
             <div class="space-y-6">
 
-                {{-- CONTRACT --}}
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                     <h3 class="text-lg font-bold text-slate-900 mb-4">Dokumen Kontrak</h3>
 
@@ -214,7 +234,6 @@
                     @endif
                 </div>
 
-                {{-- PROJECT --}}
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                     <h3 class="text-lg font-bold text-slate-900 mb-4">Project</h3>
 
@@ -246,7 +265,6 @@
                     @endif
                 </div>
 
-                {{-- QUICK INFO --}}
                 <div class="bg-slate-900 text-white rounded-2xl shadow-sm p-6">
                     <h3 class="text-lg font-bold mb-3">Status Workflow</h3>
 

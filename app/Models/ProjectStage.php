@@ -8,6 +8,7 @@ class ProjectStage extends Model
 {
     protected $fillable = [
         'project_id',
+        'order_item_id',
         'stage_name',
         'weight_percent',
         'status',
@@ -19,6 +20,11 @@ class ProjectStage extends Model
     public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function orderItem()
+    {
+        return $this->belongsTo(OrderItem::class);
     }
 
     public function employee()
