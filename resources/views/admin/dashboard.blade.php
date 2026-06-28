@@ -107,6 +107,46 @@
             </div>
         </div>
 
+        {{-- PERLU TINDAKAN --}}
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">
+                        🚨 Perlu Tindakan
+                    </h3>
+                    <p class="text-sm text-gray-500">
+                        Ringkasan aktivitas yang memerlukan perhatian admin.
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div class="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
+                    <div class="text-yellow-600 font-semibold text-sm">Order Pending</div>
+                    <div class="text-3xl font-black mt-2">{{ $pendingOrders }}</div>
+                    <div class="text-xs text-yellow-700 mt-2">Menunggu verifikasi admin.</div>
+                </div>
+
+                <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                    <div class="text-blue-600 font-semibold text-sm">Client Baru</div>
+                    <div class="text-3xl font-black mt-2">{{ $pendingClients }}</div>
+                    <div class="text-xs text-blue-700 mt-2">Menunggu persetujuan akun.</div>
+                </div>
+
+                <div class="rounded-xl border border-orange-200 bg-orange-50 p-4">
+                    <div class="text-orange-600 font-semibold text-sm">Deadline Project</div>
+                    <div class="text-3xl font-black mt-2">{{ $deadlineProjects }}</div>
+                    <div class="text-xs text-orange-700 mt-2">Deadline ≤ 7 hari.</div>
+                </div>
+
+                <div class="rounded-xl border border-red-200 bg-red-50 p-4">
+                    <div class="text-red-600 font-semibold text-sm">Percepatan Produksi</div>
+                    <div class="text-3xl font-black mt-2">{{ $accelerationOrders }}</div>
+                    <div class="text-xs text-red-700 mt-2">Memerlukan prioritas produksi.</div>
+                </div>
+            </div>
+        </div>
+
         {{-- PEAK SEASON --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-sm">

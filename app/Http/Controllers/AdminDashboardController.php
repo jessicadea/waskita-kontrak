@@ -38,6 +38,27 @@ class AdminDashboardController extends Controller
         $projectInProgress = Project::where('status', 'in_progress')->count();
         $projectDone = Project::where('status', 'done')->count();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Perlu Tindakan
+        |--------------------------------------------------------------------------
+        | Data ini digunakan untuk menampilkan aktivitas yang perlu segera
+        | ditindaklanjuti oleh admin pada dashboard.
+        */
+        $pendingOrders = Order::where('status_verify', 'pending')->count();
+
+        $pendingClients = User::where('role', 'client')
+            ->where('is_approved', false)
+            ->count();
+
+        $accelerationOrders = Order::where('requires_acceleration', true)
+            ->where('status_verify', 'approved')
+            ->count();
+
+        $deadlineProjects = Project::where('status', '!=', 'done')
+            ->whereDate('due_date', '<=', now()->addDays(7))
+            ->count();
+
         $latestOrders = Order::with([
             'user',
             'product',
@@ -115,6 +136,10 @@ class AdminDashboardController extends Controller
             'projectNotStarted',
             'projectInProgress',
             'projectDone',
+            'pendingOrders',
+            'pendingClients',
+            'accelerationOrders',
+            'deadlineProjects',
             'latestOrders',
             'trendLabels',
             'trendData',

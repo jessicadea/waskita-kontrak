@@ -2,7 +2,7 @@
     <x-slot name="header">
         <h2 class="text-2xl font-bold">Detail Order</h2>
         <p class="text-sm text-gray-500 mt-1">
-            Verifikasi pesanan, kelola kontrak, dan buat project dari order client.
+            Verifikasi pesanan, kontrak otomatis, dan project dari order client.
         </p>
     </x-slot>
 
@@ -197,40 +197,48 @@
 
                     @if($order->status_verify !== 'approved')
                         <div class="bg-orange-50 border border-orange-100 text-orange-700 rounded-xl p-4 text-sm">
-                            Kontrak dapat diunggah setelah order disetujui.
+                            <p class="font-semibold">Kontrak belum tersedia</p>
+                            <p class="mt-1">
+                                Dokumen kontrak akan otomatis dibuat oleh sistem setelah order disetujui admin.
+                            </p>
                         </div>
                     @else
                         @if($order->contract_file)
                             <div class="bg-green-50 border border-green-100 rounded-xl p-4 mb-4">
-                                <p class="text-sm font-semibold text-green-700">Kontrak tersedia</p>
+                                <div class="flex items-start gap-3">
+                                    <div class="text-2xl">📄</div>
+                                    <div>
+                                        <p class="text-sm font-semibold text-green-700">
+                                            Kontrak otomatis berhasil dibuat
+                                        </p>
+                                        <p class="text-xs text-green-600 mt-1">
+                                            Dokumen ini digenerate otomatis setelah order disetujui.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
                                 <a href="{{ asset('storage/'.$order->contract_file) }}"
                                    target="_blank"
-                                   class="text-sm text-blue-600 font-semibold">
+                                   class="block text-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold">
+                                    Lihat Kontrak
+                                </a>
+
+                                <a href="{{ asset('storage/'.$order->contract_file) }}"
+                                   download
+                                   class="block text-center border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold">
                                     Download Kontrak
                                 </a>
                             </div>
-                        @endif
-
-                        <form method="POST"
-                              action="/admin/orders/{{ $order->id }}/contract"
-                              enctype="multipart/form-data"
-                              class="space-y-4">
-                            @csrf
-
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Upload Kontrak PDF</label>
-                                <input type="file"
-                                       name="contract_file"
-                                       class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-sm">
-                                @error('contract_file')
-                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                                @enderror
+                        @else
+                            <div class="bg-yellow-50 border border-yellow-100 text-yellow-700 rounded-xl p-4 text-sm">
+                                <p class="font-semibold">Kontrak belum tergenerate</p>
+                                <p class="mt-1">
+                                    Order sudah disetujui, namun file kontrak belum tersedia. Simpan verifikasi kembali untuk membuat kontrak otomatis.
+                                </p>
                             </div>
-
-                            <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-semibold">
-                                Upload Kontrak
-                            </button>
-                        </form>
+                        @endif
                     @endif
                 </div>
 
@@ -280,7 +288,7 @@
                         </div>
 
                         <div class="flex justify-between">
-                            <span>Kontrak</span>
+                            <span>Kontrak otomatis</span>
                             <span>{{ $order->contract_file ? '✔' : '•' }}</span>
                         </div>
 
