@@ -15,6 +15,7 @@ use App\Http\Controllers\ProjectAssignmentController;
 use App\Http\Controllers\EmployeeWorkUpdateController;
 use App\Http\Controllers\ValidationController;
 use App\Http\Controllers\CompletionReportController;
+use App\Http\Controllers\Admin\UserApprovalController;
 
 use App\Models\ProductWorkStandard;
 use Carbon\Carbon;
@@ -93,7 +94,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/employees/{id}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
     Route::put('/employees/{id}', [EmployeeController::class, 'update'])->name('employees.update');
     Route::delete('/employees/{id}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
-});
+
+    Route::get('/users', [UserApprovalController::class, 'index'])->name('users.index');
+    Route::post('/users/{id}/approve', [UserApprovalController::class, 'approve'])->name('users.approve');
+    Route::delete('/users/{id}/reject', [UserApprovalController::class, 'reject'])->name('users.reject');
+    });
 
 /*
 |--------------------------------------------------------------------------

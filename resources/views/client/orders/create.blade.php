@@ -10,7 +10,6 @@
         @csrf
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
             <div class="lg:col-span-2">
                 <x-ui.card>
                     <div id="itemsWrapper">
@@ -25,47 +24,62 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-sm font-medium">Jenis Produk *</label>
-                                    <select name="items[0][product_id]" class="productSelect mt-1 w-full rounded-xl border-slate-200">
+                                    <select name="items[0][product_id]"
+                                            class="productSelect searchable-select mt-1 w-full rounded-xl border-slate-200">
                                         <option value="">Pilih produk</option>
                                         @foreach($products as $product)
                                             <option value="{{ $product->id }}">{{ $product->product_name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('items.0.product_id') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+                                    @error('items.0.product_id')
+                                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
                                 </div>
 
                                 <div>
                                     <label class="text-sm font-medium">Type Produk *</label>
-                                    <select name="items[0][variant_id]" class="variantSelect mt-1 w-full rounded-xl border-slate-200">
+                                    <select name="items[0][variant_id]"
+                                            class="variantSelect mt-1 w-full rounded-xl border-slate-200">
                                         <option value="">Pilih type</option>
                                     </select>
-                                    @error('items.0.variant_id') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+                                    @error('items.0.variant_id')
+                                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
                                 </div>
 
                                 <div>
                                     <label class="text-sm font-medium">Volume / Ukuran *</label>
-                                    <select name="items[0][volume_id]" class="volumeSelect mt-1 w-full rounded-xl border-slate-200">
+                                    <select name="items[0][volume_id]"
+                                            class="volumeSelect mt-1 w-full rounded-xl border-slate-200">
                                         <option value="">Pilih volume</option>
                                     </select>
-                                    @error('items.0.volume_id') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+                                    @error('items.0.volume_id')
+                                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
                                 </div>
 
                                 <div>
                                     <label class="text-sm font-medium">Quantity *</label>
-                                    <input type="number" name="items[0][quantity]" min="1"
+                                    <input type="number"
+                                           name="items[0][quantity]"
+                                           min="1"
                                            placeholder="Contoh: 20"
                                            class="quantityInput mt-1 w-full rounded-xl border-slate-200">
-                                    @error('items.0.quantity') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+                                    @error('items.0.quantity')
+                                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
                                 </div>
                             </div>
 
                             <div class="mt-4">
-                                <label class="text-sm font-medium">Spesifikasi / Catatan Tambahan *</label>
+                                <label class="text-sm font-medium">Spesifikasi / Catatan Tambahan</label>
                                 <textarea name="items[0][product_spec]"
                                           rows="3"
                                           placeholder="Spesifikasi khusus, catatan pengiriman, dll"
                                           class="mt-1 w-full rounded-xl border-slate-200"></textarea>
-                                @error('items.0.product_spec') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+                                @error('items.0.product_spec')
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                @enderror
                             </div>
                         </div>
                     </div>
@@ -81,45 +95,77 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="text-sm font-medium">Nama Perusahaan *</label>
-                            <input type="text" name="company_name"
+                            <input type="text"
+                                   name="company_name"
                                    value="{{ auth()->user()->name }}"
                                    class="mt-1 w-full rounded-xl border-slate-200">
-                            @error('company_name') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+                            @error('company_name')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Jenis Perusahaan *</label>
-                            <input type="text" name="company_type"
+                            <input type="text"
+                                   name="company_type"
                                    placeholder="Contoh: Kontraktor / Developer"
                                    class="mt-1 w-full rounded-xl border-slate-200">
-                            @error('company_type') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+                            @error('company_type')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Nama Project *</label>
-                            <input type="text" name="project_name"
+                            <input type="text"
+                                   name="project_name"
                                    placeholder="Nama project"
                                    class="mt-1 w-full rounded-xl border-slate-200">
-                            @error('project_name') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+                            @error('project_name')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Lokasi Project *</label>
-                            <input type="text" name="project_location"
-                                   placeholder="Kota / Provinsi"
-                                   class="mt-1 w-full rounded-xl border-slate-200">
-                            @error('project_location') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+                            <select name="project_location"
+                                    class="searchable-select mt-1 w-full rounded-xl border-slate-200">
+                                <option value="">Pilih lokasi project</option>
+                                <option value="Jakarta, DKI Jakarta">Jakarta, DKI Jakarta</option>
+                                <option value="Bekasi, Jawa Barat">Bekasi, Jawa Barat</option>
+                                <option value="Karawang, Jawa Barat">Karawang, Jawa Barat</option>
+                                <option value="Bandung, Jawa Barat">Bandung, Jawa Barat</option>
+                                <option value="Cirebon, Jawa Barat">Cirebon, Jawa Barat</option>
+                                <option value="Semarang, Jawa Tengah">Semarang, Jawa Tengah</option>
+                                <option value="Solo, Jawa Tengah">Solo, Jawa Tengah</option>
+                                <option value="Yogyakarta, DI Yogyakarta">Yogyakarta, DI Yogyakarta</option>
+                                <option value="Surabaya, Jawa Timur">Surabaya, Jawa Timur</option>
+                                <option value="Sidoarjo, Jawa Timur">Sidoarjo, Jawa Timur</option>
+                                <option value="Gresik, Jawa Timur">Gresik, Jawa Timur</option>
+                                <option value="Malang, Jawa Timur">Malang, Jawa Timur</option>
+                                <option value="Denpasar, Bali">Denpasar, Bali</option>
+                                <option value="Medan, Sumatera Utara">Medan, Sumatera Utara</option>
+                                <option value="Palembang, Sumatera Selatan">Palembang, Sumatera Selatan</option>
+                                <option value="Balikpapan, Kalimantan Timur">Balikpapan, Kalimantan Timur</option>
+                                <option value="Samarinda, Kalimantan Timur">Samarinda, Kalimantan Timur</option>
+                                <option value="Makassar, Sulawesi Selatan">Makassar, Sulawesi Selatan</option>
+                            </select>
+                            @error('project_location')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Kondisi Pengiriman *</label>
                             <select name="delivery_cond"
-                                    class="mt-2 w-full rounded-xl border-slate-200 bg-slate-50">
+                                    class="searchable-select mt-2 w-full rounded-xl border-slate-200 bg-slate-50">
                                 <option value="">Pilih kondisi pengiriman</option>
                                 <option value="Franco Lokasi">Franco Lokasi</option>
                                 <option value="Pickup">Pickup</option>
                             </select>
-                            @error('delivery_cond') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+                            @error('delivery_cond')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <div>
@@ -233,11 +279,10 @@
                         variantsData = data.variants ?? [];
 
                         variantsData.forEach(variant => {
-                            variantSelect.innerHTML += `
-                                <option value="${variant.id}">
-                                    ${variant.type_name}
-                                </option>
-                            `;
+                            const option = document.createElement('option');
+                            option.value = variant.id;
+                            option.textContent = variant.type_name;
+                            variantSelect.appendChild(option);
                         });
                     })
                     .catch(error => {
@@ -253,11 +298,10 @@
                 if (!selectedVariant) return;
 
                 selectedVariant.volumes.forEach(volume => {
-                    volumeSelect.innerHTML += `
-                        <option value="${volume.id}">
-                            ${volume.volume_value} ${volume.unit}
-                        </option>
-                    `;
+                    const option = document.createElement('option');
+                    option.value = volume.id;
+                    option.textContent = `${volume.volume_value} ${volume.unit}`;
+                    volumeSelect.appendChild(option);
                 });
             });
 
@@ -296,35 +340,40 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="text-sm font-medium">Jenis Produk *</label>
-                            <select name="items[${itemIndex}][product_id]" class="productSelect mt-1 w-full rounded-xl border-slate-200">
+                            <select name="items[${itemIndex}][product_id]"
+                                    class="productSelect searchable-select mt-1 w-full rounded-xl border-slate-200">
                                 ${productsOptions}
                             </select>
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Type Produk *</label>
-                            <select name="items[${itemIndex}][variant_id]" class="variantSelect mt-1 w-full rounded-xl border-slate-200">
+                            <select name="items[${itemIndex}][variant_id]"
+                                    class="variantSelect mt-1 w-full rounded-xl border-slate-200">
                                 <option value="">Pilih type</option>
                             </select>
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Volume / Ukuran *</label>
-                            <select name="items[${itemIndex}][volume_id]" class="volumeSelect mt-1 w-full rounded-xl border-slate-200">
+                            <select name="items[${itemIndex}][volume_id]"
+                                    class="volumeSelect mt-1 w-full rounded-xl border-slate-200">
                                 <option value="">Pilih volume</option>
                             </select>
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Quantity *</label>
-                            <input type="number" name="items[${itemIndex}][quantity]" min="1"
+                            <input type="number"
+                                   name="items[${itemIndex}][quantity]"
+                                   min="1"
                                    placeholder="Contoh: 20"
                                    class="quantityInput mt-1 w-full rounded-xl border-slate-200">
                         </div>
                     </div>
 
                     <div class="mt-4">
-                        <label class="text-sm font-medium">Spesifikasi / Catatan Tambahan *</label>
+                        <label class="text-sm font-medium">Spesifikasi / Catatan Tambahan</label>
                         <textarea name="items[${itemIndex}][product_spec]"
                                   rows="3"
                                   placeholder="Spesifikasi khusus, catatan pengiriman, dll"
@@ -336,11 +385,25 @@
             itemsWrapper.insertAdjacentHTML('beforeend', html);
 
             const newItem = itemsWrapper.lastElementChild;
+
+            if (typeof window.initSearchableSelect === 'function') {
+                window.initSearchableSelect();
+            }
             bindItemEvents(newItem);
+
+            if (typeof window.initSearchableSelect === 'function') {
+                window.initSearchableSelect('.productSelect');
+                window.initSearchableSelect('select[name="project_location"]');
+                window.initSearchableSelect('select[name="delivery_cond"]');
+            }
 
             itemIndex++;
             refreshItemTitles();
         });
+
+        if (typeof window.initSearchableSelect === 'function') {
+            window.initSearchableSelect();
+        }
 
         document.querySelectorAll('.order-item').forEach(item => {
             bindItemEvents(item);

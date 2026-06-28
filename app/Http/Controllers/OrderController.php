@@ -29,17 +29,49 @@ class OrderController extends Controller
         return view('client.orders.index', compact('orders'));
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::with([
+        $query = Order::with([
             'user',
+            'product',
+            'variant',
+            'selectedVolume',
             'items.product',
             'items.variant',
             'items.selectedVolume',
             'project',
-        ])
-            ->latest()
-            ->get();
+        ]);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('project_name', 'like', '%' . $search . '%')
+                    ->orWhere('company_name', 'like', '%' . $search . '%')
+                    ->orWhere('project_location', 'like', '%' . $search . '%')
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('email', 'like', '%' . $search . '%');
+                    })
+                    ->orWhereHas('items.product', function ($productQuery) use ($search) {
+                        $productQuery->where('product_name', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        if ($request->filled('status_verify')) {
+            $query->where('status_verify', $request->status_verify);
+        }
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        $orders = $query->latest()->get();
 
         return view('admin.orders.index', compact('orders'));
     }

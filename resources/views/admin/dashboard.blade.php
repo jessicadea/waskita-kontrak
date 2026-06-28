@@ -3,21 +3,20 @@
         <div>
             <h2 class="text-2xl font-bold">Dashboard Admin</h2>
             <p class="text-sm text-gray-500 mt-1">
-                Ringkasan pesanan, project, dan aktivitas terbaru pada sistem.
+                Ringkasan analytics pesanan, project, dan peak season pemesanan.
             </p>
         </div>
     </x-slot>
 
     <div class="space-y-6">
 
-        {{-- WELCOME --}}
         <div class="bg-gradient-to-r from-blue-950 to-blue-800 rounded-2xl p-6 text-white shadow-sm">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
                 <div>
                     <p class="text-blue-100 text-sm">Selamat datang kembali,</p>
                     <h3 class="text-2xl font-black mt-1">{{ auth()->user()->name }}</h3>
                     <p class="text-blue-100 mt-2 max-w-2xl">
-                        Pantau pesanan masuk, verifikasi order client, kelola kontrak, dan monitoring progress project melalui dashboard admin.
+                        Pantau tren pemesanan, peak season, produk terlaris, verifikasi order, dan monitoring project melalui dashboard admin.
                     </p>
                 </div>
 
@@ -34,100 +33,163 @@
             </div>
         </div>
 
+        {{-- FILTER PERIODE --}}
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                <div>
+                    <h3 class="font-bold text-lg text-slate-900">Filter Periode Analytics</h3>
+                    <p class="text-sm text-gray-500">
+                        Digunakan untuk melihat tren pemesanan dan peak season berdasarkan rentang tanggal tertentu.
+                    </p>
+                </div>
+
+                <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold w-fit">
+                    {{ $periodLabel }}
+                </span>
+            </div>
+
+            <form method="GET" action="/admin/dashboard" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label class="text-sm font-semibold text-slate-700">Tanggal Awal</label>
+                    <input type="date"
+                           name="start_date"
+                           value="{{ request('start_date', $startDate->format('Y-m-d')) }}"
+                           class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="text-sm font-semibold text-slate-700">Tanggal Akhir</label>
+                    <input type="date"
+                           name="end_date"
+                           value="{{ request('end_date', $endDate->format('Y-m-d')) }}"
+                           class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit"
+                            class="w-full px-5 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
+                        Terapkan
+                    </button>
+
+                    <a href="/admin/dashboard"
+                       class="w-full text-center px-5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
         {{-- STATS --}}
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
 
             <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm font-medium">Total Order</p>
-                        <h3 class="text-3xl font-black mt-2 text-slate-900">{{ $totalOrders }}</h3>
-                    </div>
-
-                    <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z" />
-                        </svg>
-                    </div>
-                </div>
-                <p class="text-xs text-gray-400 mt-4">Seluruh pesanan client yang masuk ke sistem.</p>
+                <p class="text-gray-500 text-sm font-medium">Total Order</p>
+                <h3 class="text-3xl font-black mt-2 text-slate-900">{{ $totalOrders }}</h3>
+                <p class="text-xs text-gray-400 mt-4">Total pesanan pada periode terpilih.</p>
             </div>
 
             <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-yellow-600 text-sm font-medium">Pending</p>
-                        <h3 class="text-3xl font-black text-yellow-600 mt-2">{{ $pending }}</h3>
-                    </div>
-
-                    <div class="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                </div>
-                <p class="text-xs text-gray-400 mt-4">Pesanan yang masih menunggu verifikasi admin.</p>
+                <p class="text-green-600 text-sm font-medium">Approved</p>
+                <h3 class="text-3xl font-black text-green-600 mt-2">{{ $approved }}</h3>
+                <p class="text-xs text-gray-400 mt-4">Pesanan yang telah disetujui.</p>
             </div>
 
             <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-green-600 text-sm font-medium">Approved</p>
-                        <h3 class="text-3xl font-black text-green-600 mt-2">{{ $approved }}</h3>
-                    </div>
-
-                    <div class="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                </div>
-                <p class="text-xs text-gray-400 mt-4">Pesanan yang telah disetujui dan dapat diproses.</p>
+                <p class="text-yellow-600 text-sm font-medium">Pending</p>
+                <h3 class="text-3xl font-black text-yellow-600 mt-2">{{ $pending }}</h3>
+                <p class="text-xs text-gray-400 mt-4">Pesanan menunggu verifikasi.</p>
             </div>
 
             <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-red-600 text-sm font-medium">Rejected</p>
-                        <h3 class="text-3xl font-black text-red-600 mt-2">{{ $rejected }}</h3>
-                    </div>
+                <p class="text-orange-600 text-sm font-medium">Percepatan Produksi</p>
+                <h3 class="text-3xl font-black text-orange-600 mt-2">{{ $acceleratedOrders }}</h3>
+                <p class="text-xs text-gray-400 mt-4">Order yang mengajukan percepatan.</p>
+            </div>
+        </div>
 
-                    <div class="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
+        {{-- PEAK SEASON --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-sm">
+                <p class="text-orange-100 text-sm font-semibold">Peak Season Pemesanan</p>
+                <h3 class="text-3xl font-black mt-3">{{ $peakSeasonLabel }}</h3>
+                <p class="mt-3 text-orange-50">
+                    Periode dengan pemesanan tertinggi sebanyak
+                    <span class="font-black">{{ $peakSeasonTotal }}</span> order.
+                </p>
+                <div class="mt-4 bg-white/15 rounded-xl p-3 text-sm text-orange-50">
+                    <p class="font-bold">Rekomendasi:</p>
+                    <p>
+                        Siapkan material dan kapasitas produksi minimal 30 hari sebelum
+                        {{ $peakSeasonLabel }} untuk mengantisipasi lonjakan pemesanan.
+                    </p>
                 </div>
-                <p class="text-xs text-gray-400 mt-4">Pesanan yang ditolak berdasarkan hasil verifikasi.</p>
             </div>
 
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <p class="text-gray-500 text-sm font-semibold">Produk Terlaris</p>
+                <h3 class="text-2xl font-black mt-3 text-slate-900">{{ $topProductName }}</h3>
+                <p class="mt-3 text-sm text-gray-500">
+                    Total quantity pada periode ini:
+                    <span class="font-bold text-slate-900">{{ number_format($topProductQty) }}</span> unit.
+                </p>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <p class="text-gray-500 text-sm font-semibold">Total Client</p>
+                <h3 class="text-2xl font-black mt-3 text-slate-900">{{ $totalClients }}</h3>
+                <p class="mt-3 text-sm text-gray-500">
+                    Jumlah akun client yang terdaftar pada sistem.
+                </p>
+            </div>
         </div>
 
         {{-- CHARTS --}}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="font-bold text-lg text-slate-900">Status Order</h3>
-                        <p class="text-sm text-gray-500">Distribusi status verifikasi pesanan.</p>
-                    </div>
+                <div class="mb-4">
+                    <h3 class="font-bold text-lg text-slate-900">Tren Pemesanan</h3>
+                    <p class="text-sm text-gray-500">
+                        Grafik untuk mengetahui peak season pemesanan berdasarkan bulan.
+                    </p>
+                </div>
+
+                <div class="h-72">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <div class="mb-4">
+                    <h3 class="font-bold text-lg text-slate-900">Status Order</h3>
+                    <p class="text-sm text-gray-500">Distribusi status verifikasi pesanan.</p>
                 </div>
 
                 <div class="h-72 flex items-center justify-center">
                     <canvas id="orderChart"></canvas>
                 </div>
             </div>
+        </div>
 
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="font-bold text-lg text-slate-900">Status Project</h3>
-                        <p class="text-sm text-gray-500">Ringkasan status project berjalan.</p>
-                    </div>
+                <div class="mb-4">
+                    <h3 class="font-bold text-lg text-slate-900">Status Project</h3>
+                    <p class="text-sm text-gray-500">Ringkasan status project berjalan.</p>
                 </div>
 
                 <div class="h-72">
                     <canvas id="projectChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <div class="mb-4">
+                    <h3 class="font-bold text-lg text-slate-900">Top Produk Berdasarkan Quantity</h3>
+                    <p class="text-sm text-gray-500">Produk yang paling banyak dipesan pada periode terpilih.</p>
+                </div>
+
+                <div class="h-72">
+                    <canvas id="productChart"></canvas>
                 </div>
             </div>
         </div>
@@ -160,30 +222,28 @@
                         @forelse($latestOrders as $order)
                             <tr class="hover:bg-slate-50 transition">
                                 <td class="px-5 py-4">
-                                    <p class="font-semibold text-slate-900">
-                                        {{ $order->user->name }}
-                                    </p>
-                                    <p class="text-xs text-gray-500">
-                                        {{ $order->company_name ?? '-' }}
-                                    </p>
+                                    <p class="font-semibold text-slate-900">{{ $order->user->name ?? '-' }}</p>
+                                    <p class="text-xs text-gray-500">{{ $order->company_name ?? '-' }}</p>
                                 </td>
 
                                 <td class="px-5 py-4">
-                                    <p class="font-semibold text-slate-900">
-                                        {{ $order->product->product_name }}
-                                    </p>
-                                    <p class="text-xs text-gray-500">
-                                        {{ $order->variant->type_name ?? '-' }}
-                                    </p>
+                                    @if($order->items->count() > 0)
+                                        <p class="font-semibold text-slate-900">{{ $order->items->count() }} Produk</p>
+                                        <p class="text-xs text-gray-500">
+                                            {{ $order->items->first()->product->product_name ?? '-' }}
+                                            @if($order->items->count() > 1)
+                                                + {{ $order->items->count() - 1 }} lainnya
+                                            @endif
+                                        </p>
+                                    @else
+                                        <p class="font-semibold text-slate-900">{{ $order->product->product_name ?? '-' }}</p>
+                                        <p class="text-xs text-gray-500">{{ $order->variant->type_name ?? '-' }}</p>
+                                    @endif
                                 </td>
 
                                 <td class="px-5 py-4">
-                                    <p class="font-medium text-slate-900">
-                                        {{ $order->project_name }}
-                                    </p>
-                                    <p class="text-xs text-gray-500">
-                                        {{ $order->project_location ?? '-' }}
-                                    </p>
+                                    <p class="font-medium text-slate-900">{{ $order->project_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ $order->project_location ?? '-' }}</p>
                                 </td>
 
                                 <td class="px-5 py-4">
@@ -221,6 +281,44 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        const trendLabels = @json($trendLabels);
+        const trendData = @json($trendData);
+
+        new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Jumlah Order',
+                    data: trendData,
+                    borderColor: '#2563EB',
+                    backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#2563EB'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 },
+                        grid: { color: '#E2E8F0' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
         new Chart(document.getElementById('orderChart'), {
             type: 'doughnut',
             data: {
@@ -238,10 +336,7 @@
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: {
-                            usePointStyle: true,
-                            boxWidth: 8
-                        }
+                        labels: { usePointStyle: true, boxWidth: 8 }
                     }
                 }
             }
@@ -261,26 +356,41 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
+                plugins: { legend: { display: false } },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: {
-                            precision: 0
-                        },
-                        grid: {
-                            color: '#E2E8F0'
-                        }
+                        ticks: { precision: 0 },
+                        grid: { color: '#E2E8F0' }
                     },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('productChart'), {
+            type: 'bar',
+            data: {
+                labels: @json($topProducts->pluck('product_name')),
+                datasets: [{
+                    label: 'Quantity',
+                    data: @json($topProducts->pluck('total_quantity')),
+                    backgroundColor: '#0F172A',
+                    borderRadius: 10
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
                     x: {
-                        grid: {
-                            display: false
-                        }
-                    }
+                        beginAtZero: true,
+                        ticks: { precision: 0 },
+                        grid: { color: '#E2E8F0' }
+                    },
+                    y: { grid: { display: false } }
                 }
             }
         });

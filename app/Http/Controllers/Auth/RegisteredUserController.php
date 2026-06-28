@@ -40,15 +40,13 @@ class RegisteredUserController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'role' => 'client',
+            'is_approved' => false,
         ]);
 
         event(new Registered($user));
 
-        Auth::login($user);
-
-        return redirect(route('dashboard', absolute: false));
+        return redirect()->route('login')->with('status', 'Registrasi berhasil. Akun Anda sedang menunggu persetujuan Administrator.');
     }
 }

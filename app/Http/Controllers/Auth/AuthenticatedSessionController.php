@@ -22,14 +22,28 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $user = auth()->user();
+        $user = Auth::user();
+
+        if (!$user->is_approved) {
+            Auth::guard('web')->logout();
+
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()
+                ->route('login')
+                ->withErrors([
+                    'email' => 'Akun Anda sedang menunggu persetujuan Administrator.',
+                ])
+                ->onlyInput('email');
+        }
 
         return match ($user->role) {
-        'admin' => redirect('/admin/dashboard'),
-        'pegawai' => redirect('/pegawai/dashboard'),
-        'pimpinan' => redirect('/pimpinan/dashboard'),
-        default => redirect('/client/dashboard'),
-    };
+            'admin' => redirect('/admin/dashboard'),
+            'pegawai' => redirect('/pegawai/dashboard'),
+            'pimpinan' => redirect('/pimpinan/dashboard'),
+            default => redirect('/client/dashboard'),
+        };
     }
 
     public function destroy(Request $request): RedirectResponse

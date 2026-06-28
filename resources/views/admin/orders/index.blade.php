@@ -14,23 +14,86 @@
             </div>
         @endif
 
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+                <div>
+                    <h3 class="font-bold text-lg text-slate-900">Filter Pesanan</h3>
+                    <p class="text-sm text-gray-500">
+                        Cari pesanan berdasarkan tanggal, status, client, produk, atau nama project.
+                    </p>
+                </div>
+
+                <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold w-fit">
+                    {{ $orders->count() }} Pesanan
+                </span>
+            </div>
+
+            <form method="GET" action="{{ route('admin.orders.index') }}"
+                  class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+
+                <div class="md:col-span-2">
+                    <label class="text-sm font-semibold text-slate-700">Pencarian</label>
+                    <input type="text"
+                           name="search"
+                           value="{{ request('search') }}"
+                           placeholder="Client, project, lokasi, produk..."
+                           class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="text-sm font-semibold text-slate-700">Tanggal Awal</label>
+                    <input type="date"
+                           name="start_date"
+                           value="{{ request('start_date') }}"
+                           class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="text-sm font-semibold text-slate-700">Tanggal Akhir</label>
+                    <input type="date"
+                           name="end_date"
+                           value="{{ request('end_date') }}"
+                           class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="text-sm font-semibold text-slate-700">Status</label>
+                    <select name="status_verify"
+                            class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="">Semua Status</option>
+                        <option value="pending" {{ request('status_verify') === 'pending' ? 'selected' : '' }}>
+                            Pending
+                        </option>
+                        <option value="approved" {{ request('status_verify') === 'approved' ? 'selected' : '' }}>
+                            Disetujui
+                        </option>
+                        <option value="rejected" {{ request('status_verify') === 'rejected' ? 'selected' : '' }}>
+                            Ditolak
+                        </option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-5 flex flex-wrap gap-3">
+                    <button type="submit"
+                            class="px-5 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
+                        Terapkan Filter
+                    </button>
+
+                    <a href="{{ route('admin.orders.index') }}"
+                       class="px-5 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <h3 class="font-bold text-lg text-slate-900">Daftar Pesanan</h3>
                     <p class="text-sm text-gray-500">
-                        Total {{ $orders->count() }} pesanan masuk
+                        Menampilkan {{ $orders->count() }} pesanan
                     </p>
-                </div>
-
-                <div class="flex gap-3">
-                    <input type="text"
-                           placeholder="Cari client / project..."
-                           class="rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-blue-500">
-
-                    <button class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-semibold hover:bg-slate-50">
-                        Filter
-                    </button>
                 </div>
             </div>
 
@@ -39,6 +102,7 @@
                     <thead class="bg-slate-50 text-slate-600">
                         <tr class="border-b border-slate-200 text-left">
                             <th class="px-5 py-4 font-semibold">No. Order</th>
+                            <th class="px-5 py-4 font-semibold">Tanggal</th>
                             <th class="px-5 py-4 font-semibold">Client</th>
                             <th class="px-5 py-4 font-semibold">Produk</th>
                             <th class="px-5 py-4 font-semibold">Project</th>
@@ -55,9 +119,18 @@
                                 </td>
 
                                 <td class="px-5 py-4">
+                                    <p class="font-semibold text-slate-900">
+                                        {{ $order->created_at->format('d M Y') }}
+                                    </p>
+                                    <p class="text-xs text-gray-500">
+                                        {{ $order->created_at->format('H:i') }}
+                                    </p>
+                                </td>
+
+                                <td class="px-5 py-4">
                                     <div>
                                         <p class="font-semibold text-slate-900">
-                                            {{ $order->user->name }}
+                                            {{ $order->user->name ?? '-' }}
                                         </p>
                                         <p class="text-xs text-gray-500">
                                             {{ $order->company_name ?? '-' }}
@@ -67,15 +140,41 @@
 
                                 <td class="px-5 py-4">
                                     <div>
-                                        <p class="font-semibold text-slate-900">
-                                            {{ $order->product->product_name }}
-                                        </p>
-                                        <p class="text-xs text-gray-500">
-                                            {{ $order->variant->type_name ?? '-' }}
-                                            @if($order->selectedVolume)
-                                                • {{ $order->selectedVolume->volume_value }} {{ $order->selectedVolume->unit }}
-                                            @endif
-                                        </p>
+                                        @if($order->items->count() > 0)
+                                            <p class="font-semibold text-slate-900">
+                                                {{ $order->items->count() }} Produk
+                                            </p>
+
+                                            <div class="text-xs text-gray-500 mt-1 space-y-1">
+                                                @foreach($order->items->take(2) as $item)
+                                                    <p>
+                                                        {{ $item->product->product_name ?? '-' }}
+                                                        @if($item->variant)
+                                                            • {{ $item->variant->type_name }}
+                                                        @endif
+                                                        @if($item->selectedVolume)
+                                                            • {{ $item->selectedVolume->volume_value }} {{ $item->selectedVolume->unit }}
+                                                        @endif
+                                                    </p>
+                                                @endforeach
+
+                                                @if($order->items->count() > 2)
+                                                    <p class="text-blue-600 font-semibold">
+                                                        +{{ $order->items->count() - 2 }} produk lainnya
+                                                    </p>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <p class="font-semibold text-slate-900">
+                                                {{ $order->product->product_name ?? '-' }}
+                                            </p>
+                                            <p class="text-xs text-gray-500">
+                                                {{ $order->variant->type_name ?? '-' }}
+                                                @if($order->selectedVolume)
+                                                    • {{ $order->selectedVolume->volume_value }} {{ $order->selectedVolume->unit }}
+                                                @endif
+                                            </p>
+                                        @endif
                                     </div>
                                 </td>
 
@@ -120,11 +219,11 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-5 py-12 text-center">
+                                <td colspan="7" class="px-5 py-12 text-center">
                                     <div class="text-4xl mb-3">📭</div>
-                                    <p class="font-semibold text-slate-900">Belum ada order masuk</p>
+                                    <p class="font-semibold text-slate-900">Data pesanan tidak ditemukan</p>
                                     <p class="text-sm text-gray-500 mt-1">
-                                        Order dari client akan tampil di halaman ini.
+                                        Coba ubah kata kunci atau rentang tanggal filter.
                                     </p>
                                 </td>
                             </tr>
