@@ -25,11 +25,14 @@ class EmployeeWorkUpdateController extends Controller
     public function create(Request $request)
     {
         $employee = Employee::where('user_id', auth()->id())->firstOrFail();
-
         $projectId = $request->project_id;
 
         if ($projectId) {
-            $project = Project::with('stages')->findOrFail($projectId);
+            $project = Project::with([
+                'stages.orderItem.product',
+                'stages.employee',
+                'assignments',
+            ])->findOrFail($projectId);
 
             $isAssigned = $project->assignments()
                 ->where('employee_id', $employee->id)
@@ -40,52 +43,55 @@ class EmployeeWorkUpdateController extends Controller
                     ->with('error', 'Project ini belum ditugaskan ke akun pegawai Anda.');
             }
 
-            if ($project->stages()->count() === 0) {
-                $this->createDefaultProjectStages($project);
-            }
-
-            $stages = $project->stages()
-                ->whereIn('status', ['todo', 'in_progress', 'rejected'])
-                ->orderBy('id')
-                ->get();
+            $stages = $this->getAvailableNextStages($project);
 
             return view('pegawai.work_updates.create', compact('stages', 'project'));
         }
 
         $project = null;
 
-        $stages = ProjectStage::with('project')
-            ->whereHas('project.assignments', function ($q) use ($employee) {
+        $projects = Project::with([
+            'stages.orderItem.product',
+            'stages.employee',
+        ])
+            ->whereHas('assignments', function ($q) use ($employee) {
                 $q->where('employee_id', $employee->id);
             })
-            ->whereIn('status', ['todo', 'in_progress', 'rejected'])
-            ->orderBy('project_id')
-            ->orderBy('id')
             ->get();
+
+        $stages = collect();
+
+        foreach ($projects as $assignedProject) {
+            $stages = $stages->merge($this->getAvailableNextStages($assignedProject));
+        }
 
         return view('pegawai.work_updates.create', compact('stages', 'project'));
     }
 
-    private function createDefaultProjectStages(Project $project)
+    private function getAvailableNextStages(Project $project)
     {
-        $defaultStages = [
-            ['Persiapan Material', 10],
-            ['Pembuatan Cetakan / Mould', 15],
-            ['Pengecoran', 10],
-            ['Curing Beton', 15],
-            ['Quality Control', 15],
-            ['Pengiriman', 10],
-            ['Dokumentasi & Serah Terima', 10],
-        ];
+        $stages = $project->stages()
+            ->with(['orderItem.product'])
+            ->orderBy('order_item_id')
+            ->orderBy('id')
+            ->get()
+            ->groupBy(function ($stage) {
+                return $stage->order_item_id ?? 'general';
+            });
 
-        foreach ($defaultStages as [$name, $weight]) {
-            ProjectStage::create([
-                'project_id' => $project->id,
-                'stage_name' => $name,
-                'weight_percent' => $weight,
-                'status' => 'todo',
-            ]);
+        $availableStages = collect();
+
+        foreach ($stages as $group) {
+            $nextStage = $group->first(function ($stage) {
+                return $stage->status !== 'approved';
+            });
+
+            if ($nextStage && in_array($nextStage->status, ['todo', 'rejected'])) {
+                $availableStages->push($nextStage);
+            }
         }
+
+        return $availableStages;
     }
 
     public function store(Request $request)
@@ -98,7 +104,11 @@ class EmployeeWorkUpdateController extends Controller
 
         $employee = Employee::where('user_id', auth()->id())->firstOrFail();
 
-        $stage = ProjectStage::with('project')
+        $stage = ProjectStage::with([
+            'project.stages',
+            'project.assignments',
+            'orderItem.product',
+        ])
             ->where('id', $request->stage_id)
             ->whereHas('project.assignments', function ($q) use ($employee) {
                 $q->where('employee_id', $employee->id);
@@ -109,7 +119,17 @@ class EmployeeWorkUpdateController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-                    'stage_id' => 'Tahap ini sudah sedang diproses atau sudah disetujui.',
+                    'stage_id' => 'Tahap ini sedang menunggu validasi atau sudah disetujui.',
+                ]);
+        }
+
+        $nextAllowedStage = $this->getNextAllowedStage($stage->project, $stage->order_item_id);
+
+        if (!$nextAllowedStage || $nextAllowedStage->id !== $stage->id) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'stage_id' => 'Tahapan harus dikerjakan sesuai urutan. Selesaikan tahap sebelumnya terlebih dahulu.',
                 ]);
         }
 
@@ -144,5 +164,22 @@ class EmployeeWorkUpdateController extends Controller
 
         return redirect('/pegawai/work-updates')
             ->with('success', 'Tahap pekerjaan berhasil dikirim dan menunggu validasi pimpinan.');
+    }
+
+    private function getNextAllowedStage(Project $project, $orderItemId)
+    {
+        return $project->stages()
+            ->where(function ($q) use ($orderItemId) {
+                if ($orderItemId) {
+                    $q->where('order_item_id', $orderItemId);
+                } else {
+                    $q->whereNull('order_item_id');
+                }
+            })
+            ->orderBy('id')
+            ->get()
+            ->first(function ($stage) {
+                return $stage->status !== 'approved';
+            });
     }
 }
