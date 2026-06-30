@@ -22,4 +22,5 @@ class CompletionReportController extends Controller
 
         return $pdf->download('laporan-project-'.$project->id.'.pdf');
     }
+
 }

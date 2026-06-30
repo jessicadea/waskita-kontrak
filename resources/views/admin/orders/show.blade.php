@@ -6,6 +6,70 @@
         </p>
     </x-slot>
 
+    @php
+        $productionEstimates = [];
+        $totalProductionDays = 0;
+        $totalBasePrice = 0;
+        $totalAccelerationFee = 0;
+        $totalEstimatedCost = 0;
+
+        $deliveryDate = \Carbon\Carbon::parse($order->delivery_date)->startOfDay();
+        $availableDays = max(\Carbon\Carbon::today()->diffInDays($deliveryDate), 1);
+
+        foreach ($order->items as $item) {
+            $standard = \App\Models\ProductWorkStandard::where('product_id', $item->product_id)
+                ->where('variant_id', $item->variant_id)
+                ->where('volume_id', $item->volume_id)
+                ->first();
+
+            $capacityPerDay = $standard->capacity_per_day ?? 10;
+            $basePricePerUnit = $standard->base_price_per_unit ?? 1000000;
+
+            $productionDays = (int) ceil($item->quantity / max($capacityPerDay, 1));
+            $usagePercent = (int) round(($productionDays / $availableDays) * 100);
+
+            $basePrice = $item->quantity * $basePricePerUnit;
+
+            $accelerationFee = 0;
+
+            if ($productionDays > $availableDays) {
+                $accelerationPercent = (int) round((($productionDays - $availableDays) / $productionDays) * 100);
+                $accelerationFee = (int) round($basePrice * ($accelerationPercent / 100) * 0.5);
+            }
+
+            $totalCost = $basePrice + $accelerationFee;
+
+            $productionEstimates[] = [
+                'product' => $item->product->product_name ?? '-',
+                'quantity' => $item->quantity,
+                'capacity_per_day' => $capacityPerDay,
+                'production_days' => $productionDays,
+                'usage_percent' => $usagePercent,
+                'base_price' => $basePrice,
+                'acceleration_fee' => $accelerationFee,
+                'total_cost' => $totalCost,
+            ];
+
+            $totalProductionDays += $productionDays;
+            $totalBasePrice += $basePrice;
+            $totalAccelerationFee += $accelerationFee;
+            $totalEstimatedCost += $totalCost;
+        }
+
+        $totalSdm = 18;
+
+        if ($totalProductionDays <= $availableDays * 0.7) {
+            $productionStatus = 'Aman';
+            $productionClass = 'bg-green-100 text-green-700 border-green-200';
+        } elseif ($totalProductionDays <= $availableDays) {
+            $productionStatus = 'Cukup Ketat';
+            $productionClass = 'bg-yellow-100 text-yellow-700 border-yellow-200';
+        } else {
+            $productionStatus = 'Perlu Percepatan';
+            $productionClass = 'bg-red-100 text-red-700 border-red-200';
+        }
+    @endphp
+
     <div class="space-y-6">
 
         @if(session('success'))
@@ -44,9 +108,11 @@
                             <p class="text-sm text-gray-500">
                                 ORD-{{ $order->created_at->format('Y') }}-{{ str_pad($order->id, 4, '0', STR_PAD_LEFT) }}
                             </p>
+
                             <h3 class="text-xl font-bold text-slate-900">
                                 {{ $order->project_name }}
                             </h3>
+
                             <p class="text-sm text-gray-500 mt-1">
                                 {{ $order->project_location }}
                             </p>
@@ -89,7 +155,9 @@
 
                         <div class="bg-slate-50 rounded-xl p-4">
                             <p class="text-gray-500">Tanggal Kirim</p>
-                            <p class="font-semibold text-slate-900">{{ $order->delivery_date }}</p>
+                            <p class="font-semibold text-slate-900">
+                                {{ \Carbon\Carbon::parse($order->delivery_date)->format('d M Y') }}
+                            </p>
                         </div>
 
                         <div class="bg-slate-50 rounded-xl p-4">
@@ -123,12 +191,15 @@
                                     @forelse($order->items as $item)
                                         <tr class="hover:bg-slate-50">
                                             <td class="border px-3 py-2">{{ $loop->iteration }}</td>
+
                                             <td class="border px-3 py-2 font-semibold text-slate-900">
                                                 {{ $item->product->product_name ?? '-' }}
                                             </td>
+
                                             <td class="border px-3 py-2">
                                                 {{ $item->variant->type_name ?? '-' }}
                                             </td>
+
                                             <td class="border px-3 py-2">
                                                 @if($item->selectedVolume)
                                                     {{ $item->selectedVolume->volume_value }} {{ $item->selectedVolume->unit }}
@@ -136,9 +207,11 @@
                                                     {{ $item->volume }}
                                                 @endif
                                             </td>
+
                                             <td class="border px-3 py-2">
                                                 {{ $item->quantity }} unit
                                             </td>
+
                                             <td class="border px-3 py-2">
                                                 {{ $item->product_spec ?: '-' }}
                                             </td>
@@ -240,6 +313,79 @@
                             </div>
                         @endif
                     @endif
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4">Estimasi Produksi Admin</h3>
+
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Hari Tersedia</span>
+                            <span class="font-bold text-slate-900">{{ $availableDays }} hari</span>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Estimasi Produksi</span>
+                            <span class="font-bold text-slate-900">{{ $totalProductionDays }} hari</span>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Estimasi SDM</span>
+                            <span class="font-bold text-slate-900">{{ $totalSdm }} pekerja</span>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500">Status Produksi</span>
+                            <span class="px-3 py-1 rounded-full border text-xs font-bold {{ $productionClass }}">
+                                {{ $productionStatus }}
+                            </span>
+                        </div>
+
+                        <hr>
+
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Harga Dasar</span>
+                            <span class="font-bold text-slate-900">
+                                Rp {{ number_format($totalBasePrice, 0, ',', '.') }}
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Biaya Percepatan</span>
+                            <span class="font-bold text-slate-900">
+                                Rp {{ number_format($totalAccelerationFee, 0, ',', '.') }}
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between text-base">
+                            <span class="font-bold text-slate-900">Total Estimasi</span>
+                            <span class="font-black text-blue-700">
+                                Rp {{ number_format($totalEstimatedCost, 0, ',', '.') }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mt-5">
+                        <p class="font-semibold text-slate-900 mb-2">Detail Produk</p>
+
+                        <div class="space-y-3">
+                            @forelse($productionEstimates as $estimate)
+                                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                                    <p class="font-semibold text-slate-900">
+                                        {{ $estimate['product'] }}
+                                    </p>
+
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        Qty {{ $estimate['quantity'] }} unit •
+                                        Kapasitas {{ $estimate['capacity_per_day'] }} unit/hari •
+                                        Estimasi {{ $estimate['production_days'] }} hari
+                                    </p>
+                                </div>
+                            @empty
+                                <p class="text-sm text-gray-500">Belum ada estimasi produk.</p>
+                            @endforelse
+                        </div>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">

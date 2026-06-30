@@ -272,6 +272,61 @@ class ProjectController extends Controller
         return view('admin.projects.show', compact('project', 'employees'));
     }
 
+    public function clientProjects(Request $request)
+    {
+        $query = Project::with([
+            'order.user',
+            'order.items.product',
+            'order.items.variant',
+            'order.items.selectedVolume',
+            'stages',
+        ])
+            ->whereHas('order', function ($q) {
+                $q->where('user_id', auth()->id());
+            });
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('period')) {
+            if ($request->period === 'today') {
+                $query->whereDate('created_at', today());
+            }
+
+            if ($request->period === 'this_week') {
+                $query->whereBetween('created_at', [
+                    now()->startOfWeek(),
+                    now()->endOfWeek(),
+                ]);
+            }
+
+            if ($request->period === 'this_month') {
+                $query->whereMonth('created_at', now()->month)
+                    ->whereYear('created_at', now()->year);
+            }
+
+            if ($request->period === 'last_3_months') {
+                $query->whereDate('created_at', '>=', now()->subMonths(3));
+            }
+
+            if ($request->period === 'this_year') {
+                $query->whereYear('created_at', now()->year);
+            }
+        }
+
+        $projects = $query->latest()->get();
+
+        $summary = [
+            'total' => $projects->count(),
+            'not_started' => $projects->where('status', 'not_started')->count(),
+            'in_progress' => $projects->where('status', 'in_progress')->count(),
+            'done' => $projects->where('status', 'done')->count(),
+        ];
+
+        return view('client.projects.index', compact('projects', 'summary'));
+    }
+    
     public function monitoring($id)
     {
         $project = Project::with([

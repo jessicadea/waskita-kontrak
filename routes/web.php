@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
 use App\Http\Controllers\ClientDashboardController;
 use App\Http\Controllers\AdminDashboardController;
@@ -17,15 +18,20 @@ use App\Http\Controllers\ValidationController;
 use App\Http\Controllers\CompletionReportController;
 use App\Http\Controllers\Admin\UserApprovalController;
 
-use App\Models\ProductWorkStandard;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-
-
+/*
+|--------------------------------------------------------------------------
+| LANDING
+|--------------------------------------------------------------------------
+*/
 Route::get('/', function () {
     return view('landing');
 })->name('landing');
 
+/*
+|--------------------------------------------------------------------------
+| ROLE REDIRECT DASHBOARD
+|--------------------------------------------------------------------------
+*/
 Route::get('/dashboard', function () {
     if (!auth()->check()) {
         return redirect()->route('login');
@@ -39,6 +45,11 @@ Route::get('/dashboard', function () {
     };
 })->middleware(['auth'])->name('dashboard');
 
+/*
+|--------------------------------------------------------------------------
+| PROFILE
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -50,54 +61,60 @@ Route::middleware(['auth'])->group(function () {
 | CLIENT
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:client'])->prefix('client')->name('client.')->group(function () {
-    Route::get('/dashboard', [ClientDashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth', 'role:client'])
+    ->prefix('client')
+    ->name('client.')
+    ->group(function () {
+        Route::get('/dashboard', [ClientDashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/orders', [OrderController::class, 'clientIndex'])->name('orders.index');
-    Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
-    Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
-    Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
+        Route::get('/orders', [OrderController::class, 'clientIndex'])->name('orders.index');
+        Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
+        Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+        Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
 
-    Route::get('/kontrak', [OrderController::class, 'contracts'])->name('contracts.index');
+        Route::get('/kontrak', [OrderController::class, 'contracts'])->name('contracts.index');
 
-    Route::get('/projects/{id}/monitoring', [ProjectController::class, 'monitoring'])->name('projects.monitoring');
+        Route::get('/projects', [ProjectController::class, 'clientProjects'])->name('projects.index');
+        Route::get('/projects/{id}/monitoring', [ProjectController::class, 'monitoring'])->name('projects.monitoring');
 
-
-});
+        Route::get('/laporan', [CompletionReportController::class, 'clientReports'])
+        ->name('reports.index');
+    });
 
 /*
 |--------------------------------------------------------------------------
 | ADMIN
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
-    Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
-    Route::post('/orders/{id}/verify', [OrderController::class, 'verify'])->name('orders.verify');
-    Route::post('/orders/{id}/contract', [OrderController::class, 'uploadContract'])->name('orders.contract');
+        Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
+        Route::post('/orders/{id}/verify', [OrderController::class, 'verify'])->name('orders.verify');
+        Route::post('/orders/{id}/contract', [OrderController::class, 'uploadContract'])->name('orders.contract');
 
-    Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
-    Route::get('/projects/create/{order_id}', [ProjectController::class, 'create'])->name('projects.create');
-    Route::post('/projects', function () {
-        dd('ROUTE POST PROJECT MASUK');
-    })->name('projects.store');
-    Route::get('/projects/{id}', [ProjectController::class, 'show'])->name('projects.show');
+        Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
+        Route::get('/projects/create/{order_id}', [ProjectController::class, 'create'])->name('projects.create');
+        Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
+        Route::get('/projects/{id}', [ProjectController::class, 'show'])->name('projects.show');
+        Route::post('/projects/{id}/assign', [ProjectAssignmentController::class, 'store'])->name('projects.assign');
 
-    Route::post('/projects/{id}/assign', [ProjectAssignmentController::class, 'store'])->name('projects.assign');
-    Route::get('/project-board', [ProjectController::class, 'board'])->name('projects.board');
+        Route::get('/project-board', [ProjectController::class, 'board'])->name('projects.board');
 
-    Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
-    Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
-    Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
-    Route::get('/employees/{id}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
-    Route::put('/employees/{id}', [EmployeeController::class, 'update'])->name('employees.update');
-    Route::delete('/employees/{id}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
+        Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
+        Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
+        Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
+        Route::get('/employees/{id}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
+        Route::put('/employees/{id}', [EmployeeController::class, 'update'])->name('employees.update');
+        Route::delete('/employees/{id}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
 
-    Route::get('/users', [UserApprovalController::class, 'index'])->name('users.index');
-    Route::post('/users/{id}/approve', [UserApprovalController::class, 'approve'])->name('users.approve');
-    Route::delete('/users/{id}/reject', [UserApprovalController::class, 'reject'])->name('users.reject');
+        Route::get('/users', [UserApprovalController::class, 'index'])->name('users.index');
+        Route::post('/users/{id}/approve', [UserApprovalController::class, 'approve'])->name('users.approve');
+        Route::delete('/users/{id}/reject', [UserApprovalController::class, 'reject'])->name('users.reject');
     });
 
 /*
@@ -105,32 +122,38 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 | PEGAWAI
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:pegawai'])->prefix('pegawai')->name('pegawai.')->group(function () {
-    Route::get('/dashboard', [PegawaiDashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth', 'role:pegawai'])
+    ->prefix('pegawai')
+    ->name('pegawai.')
+    ->group(function () {
+        Route::get('/dashboard', [PegawaiDashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/projects', [ProjectController::class, 'pegawaiProjects'])->name('projects.index');
-    Route::get('/projects/{id}', [ProjectController::class, 'pegawaiShow'])->name('projects.show');
+        Route::get('/projects', [ProjectController::class, 'pegawaiProjects'])->name('projects.index');
+        Route::get('/projects/{id}', [ProjectController::class, 'pegawaiShow'])->name('projects.show');
 
-    Route::get('/work-updates', [EmployeeWorkUpdateController::class, 'index'])->name('work-updates.index');
-    Route::get('/work-updates/create', [EmployeeWorkUpdateController::class, 'create'])->name('work-updates.create');
-    Route::post('/work-updates', [EmployeeWorkUpdateController::class, 'store'])->name('work-updates.store');
-});
+        Route::get('/work-updates', [EmployeeWorkUpdateController::class, 'index'])->name('work-updates.index');
+        Route::get('/work-updates/create', [EmployeeWorkUpdateController::class, 'create'])->name('work-updates.create');
+        Route::post('/work-updates', [EmployeeWorkUpdateController::class, 'store'])->name('work-updates.store');
+    });
 
 /*
 |--------------------------------------------------------------------------
 | PIMPINAN
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:pimpinan'])->prefix('pimpinan')->name('pimpinan.')->group(function () {
-    Route::get('/dashboard', [PimpinanDashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth', 'role:pimpinan'])
+    ->prefix('pimpinan')
+    ->name('pimpinan.')
+    ->group(function () {
+        Route::get('/dashboard', [PimpinanDashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/work-updates', [ValidationController::class, 'index'])->name('work-updates.index');
-    Route::get('/work-updates/{id}', [ValidationController::class, 'show'])->name('work-updates.show');
-    Route::post('/work-updates/{id}/approve', [ValidationController::class, 'approve'])->name('work-updates.approve');
-    Route::post('/work-updates/{id}/reject', [ValidationController::class, 'reject'])->name('work-updates.reject');
+        Route::get('/work-updates', [ValidationController::class, 'index'])->name('work-updates.index');
+        Route::get('/work-updates/{id}', [ValidationController::class, 'show'])->name('work-updates.show');
+        Route::post('/work-updates/{id}/approve', [ValidationController::class, 'approve'])->name('work-updates.approve');
+        Route::post('/work-updates/{id}/reject', [ValidationController::class, 'reject'])->name('work-updates.reject');
 
-    Route::get('/projects', [ProjectController::class, 'pimpinanProjects'])->name('projects.index');
-});
+        Route::get('/projects', [ProjectController::class, 'pimpinanProjects'])->name('projects.index');
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -139,12 +162,16 @@ Route::middleware(['auth', 'role:pimpinan'])->prefix('pimpinan')->name('pimpinan
 */
 Route::middleware(['auth'])->group(function () {
     Route::post('/reports', [CompletionReportController::class, 'store'])->name('reports.store');
+
     Route::get('/reports/projects/{id}/download', [CompletionReportController::class, 'downloadProjectReport'])
-    ->name('reports.projects.download');
+        ->name('reports.projects.download');
 });
 
-require __DIR__.'/auth.php';
-
+/*
+|--------------------------------------------------------------------------
+| API INTERNAL
+|--------------------------------------------------------------------------
+*/
 Route::get('/api/products/{id}/variants', function ($id) {
     return \App\Models\Product::with('variants.volumes')->findOrFail($id);
 });
@@ -184,16 +211,12 @@ Route::get('/api/estimate-workers', function (Request $request) {
 
     $totalSdm = 18;
 
-    // Estimasi harga dasar.
-    // Jika tabel ProductWorkStandard belum punya field base_price_per_unit,
-    // sistem memakai default Rp 1.000.000 per unit sebagai simulasi.
     $basePricePerUnit = isset($standard->base_price_per_unit)
         ? (int) $standard->base_price_per_unit
         : 1000000;
 
     $basePrice = (int) $request->quantity * $basePricePerUnit;
 
-    // Percepatan dihitung jika hari produksi normal lebih besar dari hari tersedia.
     $isAccelerated = $productionDays > $availableDays;
 
     $accelerationPercent = 0;
@@ -201,9 +224,6 @@ Route::get('/api/estimate-workers', function (Request $request) {
 
     if ($isAccelerated) {
         $accelerationPercent = (int) round((($productionDays - $availableDays) / $productionDays) * 100);
-
-        // Biaya percepatan dibuat sebagai simulasi.
-        // Faktor 0.5 digunakan agar biaya tambahan tidak sebesar seluruh persentase percepatan.
         $accelerationFee = (int) round($basePrice * ($accelerationPercent / 100) * 0.5);
     }
 
@@ -230,15 +250,15 @@ Route::get('/api/estimate-workers', function (Request $request) {
         'usage_percent' => $usagePercent,
         'normal_lead_days' => $normalLeadDays,
         'total_sdm' => $totalSdm,
-
         'base_price' => $basePrice,
         'acceleration_percent' => $accelerationPercent,
         'acceleration_fee' => $accelerationFee,
         'total_estimated_cost' => $totalEstimatedCost,
-
         'is_accelerated' => $isAccelerated,
         'status' => $status,
         'message' => $message,
         'color' => $color,
     ]);
 });
+
+require __DIR__.'/auth.php';

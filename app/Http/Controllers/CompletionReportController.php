@@ -23,8 +23,20 @@ class CompletionReportController extends Controller
         ])->findOrFail($id);
 
         $pdf = Pdf::loadView('reports.project_pdf', compact('project'))
-            ->setPaper('a4', 'portrait');
+        ->setPaper('a4', 'portrait');
 
         return $pdf->download('laporan-project-' . $project->id . '.pdf');
+    }
+
+    public function clientReports()
+    {
+        $projects = \App\Models\Project::with(['order', 'stages'])
+            ->whereHas('order', function ($q) {
+                $q->where('user_id', auth()->id());
+            })
+            ->latest()
+            ->get();
+
+        return view('client.reports.index', compact('projects'));
     }
 }

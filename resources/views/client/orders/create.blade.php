@@ -210,6 +210,34 @@
                         </p>
                     </div>
 
+                    <div id="priceEstimateBox"
+                         class="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm hidden">
+                        <p class="font-semibold text-blue-900 mb-3">Estimasi Harga</p>
+
+                        <div class="space-y-2">
+                            <div class="flex justify-between gap-3">
+                                <span class="text-blue-700">Harga Dasar</span>
+                                <span id="basePriceText" class="font-bold text-blue-900 text-right">Rp 0</span>
+                            </div>
+
+                            <div class="flex justify-between gap-3">
+                                <span class="text-blue-700">Biaya Percepatan</span>
+                                <span id="accelerationFeeText" class="font-bold text-blue-900 text-right">Rp 0</span>
+                            </div>
+
+                            <hr class="border-blue-200">
+
+                            <div class="flex justify-between gap-3 text-base">
+                                <span class="font-bold text-blue-900">Total Estimasi</span>
+                                <span id="totalEstimatedCostText" class="font-black text-blue-900 text-right">Rp 0</span>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-blue-700 mt-3">
+                            Estimasi harga dapat berubah setelah dilakukan verifikasi admin.
+                        </p>
+                    </div>
+
                     <div id="accelerationBox"
                          class="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                         <label class="flex items-start gap-2 cursor-pointer">
@@ -257,10 +285,76 @@
         const itemsWrapper = document.getElementById('itemsWrapper');
         const addItemBtn = document.getElementById('addItem');
 
+        function formatRupiah(value) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(value || 0);
+        }
+
+        async function calculatePriceEstimate() {
+            const deliveryDate = document.getElementById('delivery_date')?.value;
+            const box = document.getElementById('priceEstimateBox');
+
+            if (!deliveryDate) {
+                box.classList.add('hidden');
+                return;
+            }
+
+            const items = document.querySelectorAll('.order-item');
+
+            let basePriceTotal = 0;
+            let accelerationFeeTotal = 0;
+            let totalEstimatedCost = 0;
+            let validItemCount = 0;
+
+            for (const item of items) {
+                const productId = item.querySelector('.productSelect')?.value;
+                const variantId = item.querySelector('.variantSelect')?.value;
+                const volumeId = item.querySelector('.volumeSelect')?.value;
+                const quantity = item.querySelector('.quantityInput')?.value;
+
+                if (!productId || !variantId || !volumeId || !quantity) {
+                    continue;
+                }
+
+                const url = `/api/estimate-workers?product_id=${productId}&variant_id=${variantId}&volume_id=${volumeId}&quantity=${quantity}&delivery_date=${deliveryDate}`;
+
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        continue;
+                    }
+
+                    basePriceTotal += Number(data.base_price || 0);
+                    accelerationFeeTotal += Number(data.acceleration_fee || 0);
+                    totalEstimatedCost += Number(data.total_estimated_cost || 0);
+                    validItemCount++;
+                } catch (error) {
+                    console.error('Estimate price error:', error);
+                }
+            }
+
+            if (validItemCount === 0) {
+                box.classList.add('hidden');
+                return;
+            }
+
+            box.classList.remove('hidden');
+
+            document.getElementById('basePriceText').innerText = formatRupiah(basePriceTotal);
+            document.getElementById('accelerationFeeText').innerText = formatRupiah(accelerationFeeTotal);
+            document.getElementById('totalEstimatedCostText').innerText = formatRupiah(totalEstimatedCost);
+        }
+
         function bindItemEvents(item) {
             const productSelect = item.querySelector('.productSelect');
             const variantSelect = item.querySelector('.variantSelect');
             const volumeSelect = item.querySelector('.volumeSelect');
+            const quantityInput = item.querySelector('.quantityInput');
             const removeBtn = item.querySelector('.removeItem');
 
             let variantsData = [];
@@ -270,6 +364,10 @@
 
                 variantSelect.innerHTML = '<option value="">Pilih type</option>';
                 volumeSelect.innerHTML = '<option value="">Pilih volume</option>';
+
+                variantsData = [];
+
+                calculatePriceEstimate();
 
                 if (!productId) return;
 
@@ -295,6 +393,8 @@
 
                 volumeSelect.innerHTML = '<option value="">Pilih volume</option>';
 
+                calculatePriceEstimate();
+
                 if (!selectedVariant) return;
 
                 selectedVariant.volumes.forEach(volume => {
@@ -305,9 +405,13 @@
                 });
             });
 
+            volumeSelect.addEventListener('change', calculatePriceEstimate);
+            quantityInput.addEventListener('input', calculatePriceEstimate);
+
             removeBtn.addEventListener('click', function () {
                 item.remove();
                 refreshItemTitles();
+                calculatePriceEstimate();
             });
         }
 
@@ -389,16 +493,12 @@
             if (typeof window.initSearchableSelect === 'function') {
                 window.initSearchableSelect();
             }
-            bindItemEvents(newItem);
 
-            if (typeof window.initSearchableSelect === 'function') {
-                window.initSearchableSelect('.productSelect');
-                window.initSearchableSelect('select[name="project_location"]');
-                window.initSearchableSelect('select[name="delivery_cond"]');
-            }
+            bindItemEvents(newItem);
 
             itemIndex++;
             refreshItemTitles();
+            calculatePriceEstimate();
         });
 
         if (typeof window.initSearchableSelect === 'function') {
@@ -408,6 +508,12 @@
         document.querySelectorAll('.order-item').forEach(item => {
             bindItemEvents(item);
         });
+
+        const deliveryDateInput = document.getElementById('delivery_date');
+
+        if (deliveryDateInput) {
+            deliveryDateInput.addEventListener('change', calculatePriceEstimate);
+        }
 
         refreshItemTitles();
     </script>

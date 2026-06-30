@@ -14,19 +14,16 @@
 <body class="font-sans antialiased bg-slate-50 text-gray-900">
     <div x-data="{ sidebarOpen: false }" class="min-h-screen flex">
 
-        {{-- MOBILE OVERLAY --}}
         <div x-show="sidebarOpen"
              x-transition.opacity
              @click="sidebarOpen = false"
              class="fixed inset-0 bg-black/40 z-30 md:hidden">
         </div>
 
-        {{-- SIDEBAR --}}
         <aside
             :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
             class="fixed md:static z-40 inset-y-0 left-0 w-72 bg-[#0B1324] text-white transform md:translate-x-0 transition-transform duration-300 flex flex-col shadow-2xl">
 
-            {{-- BRAND --}}
             <div class="h-24 px-6 flex items-center border-b border-white/10">
                 <div>
                     <h1 class="text-xl font-black tracking-tight">Waskita Precast</h1>
@@ -34,7 +31,6 @@
                 </div>
             </div>
 
-            {{-- USER MINI --}}
             <div class="px-6 py-5 border-b border-white/10">
                 <div class="flex items-center gap-3">
                     <div class="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center font-black shadow-lg shadow-blue-900/30">
@@ -61,12 +57,14 @@
                         ? 'w-5 h-5 text-white'
                         : 'w-5 h-5 text-slate-400 group-hover:text-white';
                 };
+
+                $isCreateOrder = request()->is('client/orders/create');
+                $isOrderList = request()->is('client/orders') || (request()->is('client/orders/*') && !$isCreateOrder);
+                $isClientProjects = request()->is('client/projects*');
             @endphp
 
-            {{-- MENU --}}
             <nav class="flex-1 px-4 py-5 space-y-1.5 overflow-y-auto">
 
-                {{-- DASHBOARD --}}
                 <a href="/{{ $role }}/dashboard"
                    class="group {{ $menuClass(request()->is($role.'/dashboard')) }}">
                     <svg class="{{ $iconClass(request()->is($role.'/dashboard')) }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -77,16 +75,16 @@
 
                 @if($role === 'client')
                     <a href="/client/orders/create"
-                       class="group {{ $menuClass(request()->is('client/orders/create')) }}">
-                        <svg class="{{ $iconClass(request()->is('client/orders/create')) }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       class="group {{ $menuClass($isCreateOrder) }}">
+                        <svg class="{{ $iconClass($isCreateOrder) }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 7.5l-8-4.5-8 4.5m16 0l-8 4.5m8-4.5v9l-8 4.5m0-9l-8-4.5m8 4.5v9m-8-13.5v9l8 4.5" />
                         </svg>
                         <span>Pemesanan</span>
                     </a>
 
                     <a href="/client/orders"
-                       class="group {{ $menuClass(request()->is('client/orders') || request()->is('client/orders/*')) }}">
-                        <svg class="{{ $iconClass(request()->is('client/orders') || request()->is('client/orders/*')) }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       class="group {{ $menuClass($isOrderList) }}">
+                        <svg class="{{ $iconClass($isOrderList) }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z" />
                         </svg>
                         <span>Daftar Order</span>
@@ -101,15 +99,15 @@
                         <span>Kontrak</span>
                     </a>
 
-                    <a href="/client/orders"
-                       class="group {{ $menuClass(request()->is('client/projects/*/monitoring')) }}">
-                        <svg class="{{ $iconClass(request()->is('client/projects/*/monitoring')) }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <a href="/client/projects"
+                       class="group {{ $menuClass($isClientProjects) }}">
+                        <svg class="{{ $iconClass($isClientProjects) }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 19V9m7 10V5m7 14v-7M4 19h16" />
                         </svg>
                         <span>Monitoring Project</span>
                     </a>
 
-                    <a href="/client/orders"
+                    <a href="/client/laporan"
                        class="group {{ $menuClass(request()->is('client/laporan*')) }}">
                         <svg class="{{ $iconClass(request()->is('client/laporan*')) }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h10a2 2 0 012 2v16l-3-2-3 2-3-2-3 2V5a2 2 0 012-2z" />
@@ -153,11 +151,11 @@
                     </a>
 
                     <a href="/admin/users"
-                        class="group {{ $menuClass(request()->is('admin/users*')) }}">
-                            <svg class="{{ $iconClass(request()->is('admin/users*')) }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m8-4a4 4 0 10-8 0 4 4 0 008 0z" />
-                            </svg>
-                            <span>Manajemen User</span>
+                       class="group {{ $menuClass(request()->is('admin/users*')) }}">
+                        <svg class="{{ $iconClass(request()->is('admin/users*')) }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m8-4a4 4 0 10-8 0 4 4 0 008 0z" />
+                        </svg>
+                        <span>Manajemen User</span>
                     </a>
                 @endif
 
@@ -209,7 +207,6 @@
                 </div>
             </nav>
 
-            {{-- LOGOUT --}}
             <div class="p-4 border-t border-white/10">
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
@@ -223,10 +220,7 @@
             </div>
         </aside>
 
-        {{-- MAIN AREA --}}
         <div class="flex-1 min-w-0 flex flex-col">
-
-            {{-- TOPBAR --}}
             <header class="h-20 bg-white border-b border-slate-200 px-4 md:px-8 flex items-center justify-between sticky top-0 z-20">
                 <div class="flex items-center gap-4">
                     <button type="button" @click="sidebarOpen = true"
@@ -273,7 +267,6 @@
                 </div>
             </header>
 
-            {{-- CONTENT --}}
             <main class="flex-1 p-4 md:p-8">
                 {{ $slot }}
             </main>
