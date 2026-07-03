@@ -36,6 +36,7 @@ class EmployeeController extends Controller
             'phone' => $request->phone,
             'password' => Hash::make('password'),
             'role' => 'pegawai',
+            'is_approved' => true,
         ]);
 
         Employee::create([

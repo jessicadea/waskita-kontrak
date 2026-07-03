@@ -6,7 +6,7 @@
         </p>
     </x-slot>
 
-    <form action="{{ route('client.orders.store') }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('client.orders.store') }}" method="POST" enctype="multipart/form-data" autocomplete="off">
         @csrf
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -25,7 +25,7 @@
                                 <div>
                                     <label class="text-sm font-medium">Jenis Produk *</label>
                                     <select name="items[0][product_id]"
-                                            class="productSelect searchable-select mt-1 w-full rounded-xl border-slate-200">
+                                            class="productSelect mt-1 w-full rounded-xl border-slate-200">
                                         <option value="">Pilih produk</option>
                                         @foreach($products as $product)
                                             <option value="{{ $product->id }}">{{ $product->product_name }}</option>
@@ -129,7 +129,7 @@
                         <div>
                             <label class="text-sm font-medium">Lokasi Project *</label>
                             <select name="project_location"
-                                    class="searchable-select mt-1 w-full rounded-xl border-slate-200">
+                                    class="mt-1 w-full rounded-xl border-slate-200">
                                 <option value="">Pilih lokasi project</option>
                                 <option value="Jakarta, DKI Jakarta">Jakarta, DKI Jakarta</option>
                                 <option value="Bekasi, Jawa Barat">Bekasi, Jawa Barat</option>
@@ -158,7 +158,7 @@
                         <div>
                             <label class="text-sm font-medium">Kondisi Pengiriman *</label>
                             <select name="delivery_cond"
-                                    class="searchable-select mt-2 w-full rounded-xl border-slate-200 bg-slate-50">
+                                    class="mt-2 w-full rounded-xl border-slate-200 bg-slate-50">
                                 <option value="">Pilih kondisi pengiriman</option>
                                 <option value="Franco Lokasi">Franco Lokasi</option>
                                 <option value="Pickup">Pickup</option>
@@ -364,7 +364,6 @@
 
                 variantSelect.innerHTML = '<option value="">Pilih type</option>';
                 volumeSelect.innerHTML = '<option value="">Pilih volume</option>';
-
                 variantsData = [];
 
                 calculatePriceEstimate();
@@ -445,7 +444,7 @@
                         <div>
                             <label class="text-sm font-medium">Jenis Produk *</label>
                             <select name="items[${itemIndex}][product_id]"
-                                    class="productSelect searchable-select mt-1 w-full rounded-xl border-slate-200">
+                                    class="productSelect mt-1 w-full rounded-xl border-slate-200">
                                 ${productsOptions}
                             </select>
                         </div>
@@ -490,20 +489,12 @@
 
             const newItem = itemsWrapper.lastElementChild;
 
-            if (typeof window.initSearchableSelect === 'function') {
-                window.initSearchableSelect();
-            }
-
             bindItemEvents(newItem);
 
             itemIndex++;
             refreshItemTitles();
             calculatePriceEstimate();
         });
-
-        if (typeof window.initSearchableSelect === 'function') {
-            window.initSearchableSelect();
-        }
 
         document.querySelectorAll('.order-item').forEach(item => {
             bindItemEvents(item);

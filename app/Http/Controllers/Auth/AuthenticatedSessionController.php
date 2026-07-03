@@ -24,7 +24,14 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
-        if (!$user->is_approved) {
+        /*
+        |--------------------------------------------------------------------------
+        | Approval hanya untuk client
+        |--------------------------------------------------------------------------
+        | Admin, pegawai, dan pimpinan tidak perlu approval.
+        | Client baru wajib disetujui admin sebelum bisa masuk dashboard.
+        */
+        if ($user->role === 'client' && !$user->is_approved) {
             Auth::guard('web')->logout();
 
             $request->session()->invalidate();
