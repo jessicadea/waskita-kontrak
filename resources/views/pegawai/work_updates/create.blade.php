@@ -26,13 +26,17 @@
                     <div>
                         <label class="text-sm font-medium">Tahap Pekerjaan</label>
 
-                        <select name="stage_id" required
-                                class="w-full rounded-xl border-slate-300 focus:border-blue-500 focus:ring-blue-500">
+                        <select name="stage_id" id="stageSelect" required
+                                class="searchable-select w-full rounded-xl border-slate-300 focus:border-blue-500 focus:ring-blue-500">
                             <option value="">Pilih tahap pekerjaan</option>
 
                             @foreach($stages as $stage)
-                                <option value="{{ $stage->id }}">
-                                    {{ $stage->stage_name }} ({{ $stage->weight_percent }}%)
+                                <option value="{{ $stage->id }}"
+                                        data-project="{{ $stage->project->project_name }}"
+                                        data-stage="{{ $stage->stage_name }}"
+                                        data-weight="{{ $stage->weight_percent }}"
+                                        data-progress="{{ $stage->project->progress_percent }}">
+                                    {{ $stage->project->project_name }} - {{ $stage->stage_name }} ({{ $stage->weight_percent }}%)
                                 </option>
                             @endforeach
                         </select>

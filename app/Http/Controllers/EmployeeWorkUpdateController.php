@@ -71,7 +71,7 @@ class EmployeeWorkUpdateController extends Controller
     private function getAvailableNextStages(Project $project)
     {
         $stages = $project->stages()
-            ->with(['orderItem.product'])
+            ->with(['orderItem.product', 'project'])
             ->orderBy('order_item_id')
             ->orderBy('id')
             ->get()
@@ -86,7 +86,7 @@ class EmployeeWorkUpdateController extends Controller
                 return $stage->status !== 'approved';
             });
 
-            if ($nextStage && in_array($nextStage->status, ['todo', 'rejected'])) {
+            if ($nextStage && in_array($nextStage->status, ['todo', 'in_progress', 'rejected'])) {
                 $availableStages->push($nextStage);
             }
         }
@@ -115,7 +115,7 @@ class EmployeeWorkUpdateController extends Controller
             })
             ->firstOrFail();
 
-        if (!in_array($stage->status, ['todo', 'rejected'])) {
+        if (!in_array($stage->status, ['todo', 'in_progress', 'rejected'])) {
             return back()
                 ->withInput()
                 ->withErrors([

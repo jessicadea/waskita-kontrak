@@ -7,9 +7,9 @@ import 'tom-select/dist/css/tom-select.css';
 
 window.Alpine = Alpine;
 
-window.initSearchableSelect = function (selector = '.searchable-select') {
-    document.querySelectorAll(selector).forEach((el) => {
-        if (el.tomselect) return;
+window.initSearchableSelect = function (selector = '.searchable-select', container = document) {
+    container.querySelectorAll(selector).forEach((el) => {
+        if (el.tomselect || el.classList.contains('tomselected')) return;
 
         if (el.classList.contains('variantSelect')) return;
         if (el.classList.contains('volumeSelect')) return;

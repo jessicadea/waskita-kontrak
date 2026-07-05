@@ -132,7 +132,7 @@
                         <div class="grid md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block mb-1 font-medium">Pilih Mandor</label>
-                                <select name="employee_id" class="w-full rounded-xl border-gray-300">
+                                <select name="employee_id" class="searchable-select w-full rounded-xl border-gray-300">
                                     @foreach($employees as $employee)
                                         <option value="{{ $employee->id }}">
                                             {{ $employee->employee_name }} - Mandor

@@ -25,7 +25,7 @@
                                 <div>
                                     <label class="text-sm font-medium">Jenis Produk *</label>
                                     <select name="items[0][product_id]"
-                                            class="productSelect mt-1 w-full rounded-xl border-slate-200">
+                                            class="productSelect searchable-select mt-1 w-full rounded-xl border-slate-200">
                                         <option value="">Pilih produk</option>
                                         @foreach($products as $product)
                                             <option value="{{ $product->id }}">{{ $product->product_name }}</option>
@@ -129,7 +129,7 @@
                         <div>
                             <label class="text-sm font-medium">Lokasi Project *</label>
                             <select name="project_location"
-                                    class="mt-1 w-full rounded-xl border-slate-200">
+                                    class="searchable-select mt-1 w-full rounded-xl border-slate-200">
                                 <option value="">Pilih lokasi project</option>
                                 <option value="Jakarta, DKI Jakarta">Jakarta, DKI Jakarta</option>
                                 <option value="Bekasi, Jawa Barat">Bekasi, Jawa Barat</option>
@@ -444,7 +444,7 @@
                         <div>
                             <label class="text-sm font-medium">Jenis Produk *</label>
                             <select name="items[${itemIndex}][product_id]"
-                                    class="productSelect mt-1 w-full rounded-xl border-slate-200">
+                                    class="productSelect searchable-select mt-1 w-full rounded-xl border-slate-200">
                                 ${productsOptions}
                             </select>
                         </div>
@@ -490,6 +490,7 @@
             const newItem = itemsWrapper.lastElementChild;
 
             bindItemEvents(newItem);
+            window.initSearchableSelect('.searchable-select', newItem);
 
             itemIndex++;
             refreshItemTitles();
