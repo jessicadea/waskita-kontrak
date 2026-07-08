@@ -6,6 +6,12 @@
         </p>
     </x-slot>
 
+    @php
+        $order = $project->order;
+        $orderItems = ($order && method_exists($order, 'items')) ? $order->items : collect();
+        $projectProgress = min(100, (float) ($project->progress_percent ?? 0));
+    @endphp
+
     <div class="space-y-6">
 
         @if(session('success'))
@@ -32,7 +38,7 @@
                             </h3>
 
                             <p class="text-sm text-gray-500 mt-1">
-                                {{ $project->order->project_location ?? '-' }}
+                                {{ $order->project_location ?? '-' }}
                             </p>
                         </div>
 
@@ -55,63 +61,131 @@
                         <div class="bg-slate-50 rounded-xl p-4">
                             <p class="text-gray-500">Client</p>
                             <p class="font-semibold text-slate-900">
-                                {{ $project->order->user->name }}
+                                {{ $order->user->name ?? '-' }}
                             </p>
                         </div>
 
                         <div class="bg-slate-50 rounded-xl p-4">
-                            <p class="text-gray-500">Produk</p>
+                            <p class="text-gray-500">Jumlah Produk</p>
                             <p class="font-semibold text-slate-900">
-                                {{ $project->order->product->product_name }}
+                                {{ $orderItems->count() > 0 ? $orderItems->count() . ' produk' : '1 produk' }}
                             </p>
                             <p class="text-xs text-gray-500">
-                                {{ $project->order->variant->type_name ?? '-' }}
-                                @if($project->order->selectedVolume)
-                                    • {{ $project->order->selectedVolume->volume_value }} {{ $project->order->selectedVolume->unit }}
-                                @endif
+                                Setiap produk memiliki tahapan pekerjaan masing-masing.
                             </p>
                         </div>
 
                         <div class="bg-slate-50 rounded-xl p-4">
                             <p class="text-gray-500">Tanggal Mulai</p>
                             <p class="font-semibold text-slate-900">
-                                {{ $project->start_date }}
+                                {{ $project->start_date ?? '-' }}
                             </p>
                         </div>
 
                         <div class="bg-slate-50 rounded-xl p-4">
                             <p class="text-gray-500">Deadline</p>
                             <p class="font-semibold text-slate-900">
-                                {{ $project->due_date }}
+                                {{ $project->due_date ?? '-' }}
                             </p>
                         </div>
 
                         <div class="bg-slate-50 rounded-xl p-4">
-                            <p class="text-gray-500">Quantity</p>
+                            <p class="text-gray-500">Total Quantity</p>
                             <p class="font-semibold text-slate-900">
-                                {{ $project->order->quantity ?? '-' }}
+                                @if($orderItems->count() > 0)
+                                    {{ $orderItems->sum('quantity') }}
+                                @else
+                                    {{ $order->quantity ?? '-' }}
+                                @endif
                             </p>
                         </div>
 
                         <div class="bg-slate-50 rounded-xl p-4">
                             <p class="text-gray-500">Kondisi Pengiriman</p>
                             <p class="font-semibold text-slate-900">
-                                {{ $project->order->delivery_cond ?? '-' }}
+                                {{ $order->delivery_cond ?? '-' }}
                             </p>
                         </div>
                     </div>
 
+                    {{-- DAFTAR PRODUK DALAM PROJECT --}}
+                    <div class="mt-6">
+                        <p class="font-semibold text-slate-900 mb-3">Produk dalam Project</p>
+
+                        <div class="space-y-3">
+                            @forelse($orderItems as $item)
+                                @php
+                                    $itemStages = $project->stages->where('order_item_id', $item->id);
+                                    $itemProgress = min(100, (float) $itemStages->where('status', 'approved')->sum('weight_percent'));
+
+                                    $productName = $item->product->product_name ?? '-';
+                                    $variantName = $item->variant->type_name ?? '-';
+
+                                    $volumeText = '-';
+
+                                    if (!empty($item->selectedVolume)) {
+                                        $volumeText = ($item->selectedVolume->volume_value ?? '-') . ' ' . ($item->selectedVolume->unit ?? '');
+                                    } elseif (!empty($item->variantVolume)) {
+                                        $volumeText = ($item->variantVolume->volume_value ?? '-') . ' ' . ($item->variantVolume->unit ?? '');
+                                    } elseif (!empty($item->volume) && !is_object($item->volume)) {
+                                        $volumeText = $item->volume;
+                                    }
+                                @endphp
+
+                                <div class="border border-slate-200 rounded-xl p-4">
+                                    <div class="flex justify-between items-start gap-3">
+                                        <div>
+                                            <p class="font-bold text-slate-900">
+                                                {{ $productName }}
+                                            </p>
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                {{ $variantName }} • {{ $volumeText }} • Qty: {{ $item->quantity ?? '-' }}
+                                            </p>
+                                        </div>
+
+                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                                            {{ $itemProgress }}%
+                                        </span>
+                                    </div>
+
+                                    <div class="mt-3 w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                                        <div class="bg-blue-600 h-2 rounded-full"
+                                             style="width: {{ $itemProgress }}%">
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="border border-slate-200 rounded-xl p-4">
+                                    <p class="font-bold text-slate-900">
+                                        {{ $order->product->product_name ?? '-' }}
+                                    </p>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        {{ $order->variant->type_name ?? '-' }}
+                                        @if(!empty($order->selectedVolume))
+                                            • {{ $order->selectedVolume->volume_value }} {{ $order->selectedVolume->unit }}
+                                        @endif
+                                    </p>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    {{-- PROGRESS PROJECT --}}
                     <div class="mt-6">
                         <div class="flex justify-between text-sm mb-2">
                             <p class="font-semibold text-slate-900">Progress Project</p>
-                            <p class="font-bold text-blue-600">{{ $project->progress_percent }}%</p>
+                            <p class="font-bold text-blue-600">{{ $projectProgress }}%</p>
                         </div>
 
                         <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
                             <div class="bg-blue-600 h-3 rounded-full transition-all duration-700"
-                                 style="width: {{ $project->progress_percent }}%">
+                                 style="width: {{ $projectProgress }}%">
                             </div>
                         </div>
+
+                        <p class="text-xs text-gray-500 mt-2">
+                            Progress project dihitung maksimal 100% berdasarkan progress produk dalam project.
+                        </p>
                     </div>
 
                     <div class="mt-6">
@@ -135,7 +209,7 @@
                                 <select name="employee_id" class="searchable-select w-full rounded-xl border-gray-300">
                                     @foreach($employees as $employee)
                                         <option value="{{ $employee->id }}">
-                                            {{ $employee->employee_name }} - Mandor
+                                            {{ $employee->employee_name }} - {{ $employee->position ?? 'Mandor' }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -168,10 +242,10 @@
                                 @forelse($project->assignments as $assignment)
                                     <tr class="hover:bg-slate-50 transition">
                                         <td class="px-4 py-3 font-semibold text-slate-900">
-                                            {{ $assignment->employee->employee_name }}
+                                            {{ $assignment->employee->employee_name ?? '-' }}
                                         </td>
                                         <td class="px-4 py-3 text-slate-600">
-                                            {{ $assignment->employee->position }}
+                                            {{ $assignment->employee->position ?? '-' }}
                                         </td>
                                         <td class="px-4 py-3">
                                             <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
@@ -190,109 +264,199 @@
                         </table>
                     </div>
                 </div>
-                
-                {{-- TAHAPAN PROJECT --}}
+
+                {{-- TAHAPAN PROJECT PER PRODUK --}}
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                    <div class="flex justify-between items-center mb-5">
+                    <div class="flex justify-between items-start gap-4 mb-5">
                         <div>
                             <h3 class="text-lg font-bold text-slate-900">
-                                Tahapan Project
+                                Tahapan Project per Produk
                             </h3>
 
                             <p class="text-sm text-gray-500">
-                                Workflow produksi dan bobot progress project
+                                Pilih produk untuk melihat timeline dan tahapan pekerjaan.
                             </p>
                         </div>
 
                         <div class="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl text-sm font-semibold">
-                            Total:
-                            {{ $project->stages->sum('weight_percent') }}%
+                            Progress Project: {{ $projectProgress }}%
                         </div>
                     </div>
 
                     <div class="space-y-4">
-
-                        @foreach($project->stages as $stage)
-
+                        @forelse($orderItems as $item)
                             @php
-                                $statusColor = match($stage->status) {
-                                    'approved' => 'bg-green-100 text-green-700',
-                                    'pending_approval' => 'bg-yellow-100 text-yellow-700',
-                                    'in_progress' => 'bg-blue-100 text-blue-700',
-                                    'rejected' => 'bg-red-100 text-red-700',
-                                    default => 'bg-slate-100 text-slate-700',
-                                };
+                                $itemStages = $project->stages->where('order_item_id', $item->id);
+                                $itemTotalWeight = min(100, (float) $itemStages->sum('weight_percent'));
+                                $itemProgress = min(100, (float) $itemStages->where('status', 'approved')->sum('weight_percent'));
+
+                                $productName = $item->product->product_name ?? '-';
+                                $variantName = $item->variant->type_name ?? '-';
+
+                                $volumeText = '-';
+
+                                if (!empty($item->selectedVolume)) {
+                                    $volumeText = ($item->selectedVolume->volume_value ?? '-') . ' ' . ($item->selectedVolume->unit ?? '');
+                                } elseif (!empty($item->variantVolume)) {
+                                    $volumeText = ($item->variantVolume->volume_value ?? '-') . ' ' . ($item->variantVolume->unit ?? '');
+                                } elseif (!empty($item->volume) && !is_object($item->volume)) {
+                                    $volumeText = $item->volume;
+                                }
                             @endphp
 
-                            <div class="border border-slate-200 rounded-2xl p-5">
+                            <details class="border border-slate-200 rounded-2xl overflow-hidden bg-white" {{ $loop->first ? 'open' : '' }}>
+                                <summary class="cursor-pointer list-none p-5 bg-slate-50 hover:bg-slate-100 transition">
+                                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                        <div>
+                                            <p class="font-bold text-slate-900">
+                                                {{ $productName }}
+                                            </p>
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                {{ $variantName }} • {{ $volumeText }} • Qty: {{ $item->quantity ?? '-' }}
+                                            </p>
+                                        </div>
 
-                                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                        <div class="flex items-center gap-3">
+                                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                                                Progress Produk: {{ $itemProgress }}%
+                                            </span>
 
-                                    <div>
-                                        <div class="flex items-center gap-3 flex-wrap">
-                                            <h4 class="font-bold text-slate-900">
-                                                {{ $stage->stage_name }}
-                                            </h4>
-
-                                            <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $statusColor }}">
-                                                {{ ucfirst(str_replace('_', ' ', $stage->status)) }}
+                                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">
+                                                Total Tahapan: {{ $itemTotalWeight }}%
                                             </span>
                                         </div>
-
-                                        <div class="mt-2 text-sm text-gray-500 space-y-1">
-                                            <p>
-                                                Bobot Progress:
-                                                <span class="font-semibold text-slate-900">
-                                                    {{ $stage->weight_percent }}%
-                                                </span>
-                                            </p>
-
-                                            <p>
-                                                Pegawai:
-                                                <span class="font-semibold text-slate-900">
-                                                    {{ $stage->employee->employee_name ?? 'Belum ditugaskan' }}
-                                                </span>
-                                            </p>
-                                        </div>
                                     </div>
+                                </summary>
 
-                                    <div class="flex items-center gap-2">
+                                <div class="p-5 space-y-4">
+                                    @forelse($itemStages as $stage)
+                                        @php
+                                            $statusColor = match($stage->status) {
+                                                'approved' => 'bg-green-100 text-green-700',
+                                                'pending_approval' => 'bg-yellow-100 text-yellow-700',
+                                                'in_progress' => 'bg-blue-100 text-blue-700',
+                                                'rejected' => 'bg-red-100 text-red-700',
+                                                default => 'bg-slate-100 text-slate-700',
+                                            };
+                                        @endphp
 
-                                        @if($stage->status === 'approved')
-                                            <div class="bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg">
-                                                ✓
+                                        <div class="border border-slate-200 rounded-2xl p-5">
+                                            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                                <div>
+                                                    <div class="flex items-center gap-3 flex-wrap">
+                                                        <h4 class="font-bold text-slate-900">
+                                                            {{ $stage->stage_name }}
+                                                        </h4>
+
+                                                        <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $statusColor }}">
+                                                            {{ ucfirst(str_replace('_', ' ', $stage->status)) }}
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="mt-2 text-sm text-gray-500 space-y-1">
+                                                        <p>
+                                                            Bobot Progress:
+                                                            <span class="font-semibold text-slate-900">
+                                                                {{ $stage->weight_percent }}%
+                                                            </span>
+                                                        </p>
+
+                                                        <p>
+                                                            Pegawai:
+                                                            <span class="font-semibold text-slate-900">
+                                                                {{ $stage->employee->employee_name ?? 'Belum ditugaskan' }}
+                                                            </span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div class="flex items-center gap-2">
+                                                    @if($stage->status === 'approved')
+                                                        <div class="bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg">
+                                                            ✓
+                                                        </div>
+                                                    @elseif($stage->status === 'pending_approval')
+                                                        <div class="bg-yellow-500 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg">
+                                                            !
+                                                        </div>
+                                                    @elseif($stage->status === 'in_progress')
+                                                        <div class="bg-blue-500 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg">
+                                                            ↻
+                                                        </div>
+                                                    @else
+                                                        <div class="bg-slate-300 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg">
+                                                            •
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             </div>
 
-                                        @elseif($stage->status === 'pending_approval')
-                                            <div class="bg-yellow-500 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg">
-                                                !
-                                            </div>
+                                            @if($stage->note)
+                                                <div class="mt-4 bg-slate-50 rounded-xl p-4 text-sm text-slate-600">
+                                                    {{ $stage->note }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @empty
+                                        <div class="text-center py-8 text-gray-500">
+                                            Belum ada tahapan untuk produk ini.
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </details>
+                        @empty
+                            <div class="space-y-4">
+                                @foreach($project->stages as $stage)
+                                    @php
+                                        $statusColor = match($stage->status) {
+                                            'approved' => 'bg-green-100 text-green-700',
+                                            'pending_approval' => 'bg-yellow-100 text-yellow-700',
+                                            'in_progress' => 'bg-blue-100 text-blue-700',
+                                            'rejected' => 'bg-red-100 text-red-700',
+                                            default => 'bg-slate-100 text-slate-700',
+                                        };
+                                    @endphp
 
-                                        @elseif($stage->status === 'in_progress')
-                                            <div class="bg-blue-500 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg">
-                                                ↻
-                                            </div>
+                                    <div class="border border-slate-200 rounded-2xl p-5">
+                                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                            <div>
+                                                <div class="flex items-center gap-3 flex-wrap">
+                                                    <h4 class="font-bold text-slate-900">
+                                                        {{ $stage->stage_name }}
+                                                    </h4>
 
-                                        @else
-                                            <div class="bg-slate-300 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg">
-                                                •
+                                                    <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $statusColor }}">
+                                                        {{ ucfirst(str_replace('_', ' ', $stage->status)) }}
+                                                    </span>
+                                                </div>
+
+                                                <div class="mt-2 text-sm text-gray-500 space-y-1">
+                                                    <p>
+                                                        Bobot Progress:
+                                                        <span class="font-semibold text-slate-900">
+                                                            {{ $stage->weight_percent }}%
+                                                        </span>
+                                                    </p>
+
+                                                    <p>
+                                                        Pegawai:
+                                                        <span class="font-semibold text-slate-900">
+                                                            {{ $stage->employee->employee_name ?? 'Belum ditugaskan' }}
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        @if($stage->note)
+                                            <div class="mt-4 bg-slate-50 rounded-xl p-4 text-sm text-slate-600">
+                                                {{ $stage->note }}
                                             </div>
                                         @endif
-
                                     </div>
-
-                                </div>
-
-                                @if($stage->note)
-                                    <div class="mt-4 bg-slate-50 rounded-xl p-4 text-sm text-slate-600">
-                                        {{ $stage->note }}
-                                    </div>
-                                @endif
-
+                                @endforeach
                             </div>
-
-                        @endforeach
-
+                        @endforelse
                     </div>
                 </div>
 
@@ -364,152 +528,184 @@
 
                         <div class="flex justify-between">
                             <span>Progress Berjalan</span>
-                            <span class="{{ $project->progress_percent > 0 ? 'text-green-400' : 'text-slate-400' }}">
-                                {{ $project->progress_percent > 0 ? '✔' : '•' }}
+                            <span class="{{ $projectProgress > 0 ? 'text-green-400' : 'text-slate-400' }}">
+                                {{ $projectProgress > 0 ? '✔' : '•' }}
                             </span>
                         </div>
 
                         <div class="flex justify-between">
                             <span>Selesai</span>
-                            <span class="{{ $project->progress_percent >= 100 ? 'text-green-400' : 'text-slate-400' }}">
-                                {{ $project->progress_percent >= 100 ? '✔' : '•' }}
+                            <span class="{{ $projectProgress >= 100 ? 'text-green-400' : 'text-slate-400' }}">
+                                {{ $projectProgress >= 100 ? '✔' : '•' }}
                             </span>
                         </div>
                     </div>
                 </div>
 
                 {{-- TIMELINE PROJECT --}}
-<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-    <h3 class="text-lg font-bold text-slate-900 mb-5">Timeline Project</h3>
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                    <h3 class="text-lg font-bold text-slate-900 mb-5">Timeline Project</h3>
 
-    <div class="relative pl-8 space-y-6">
+                    <div class="relative pl-8 space-y-6">
+                        <div class="absolute left-[11px] top-2 bottom-2 w-px bg-slate-200"></div>
 
-        <div class="absolute left-[11px] top-2 bottom-2 w-px bg-slate-200"></div>
+                        <div class="relative">
+                            <div class="absolute -left-8 top-0 w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs">
+                                ✓
+                            </div>
+                            <div>
+                                <p class="font-semibold text-slate-900">Order Disetujui</p>
+                                <p class="text-xs text-gray-500">
+                                    {{ $order->updated_at->format('d M Y') }}
+                                </p>
+                            </div>
+                        </div>
 
-        {{-- ORDER APPROVED --}}
-        <div class="relative">
-            <div class="absolute -left-8 top-0 w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs">
-                ✓
-            </div>
-            <div>
-                <p class="font-semibold text-slate-900">Order Disetujui</p>
-                <p class="text-xs text-gray-500">
-                    {{ $project->order->updated_at->format('d M Y') }}
-                </p>
-            </div>
-        </div>
+                        <div class="relative">
+                            <div class="absolute -left-8 top-0 w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs">
+                                ✓
+                            </div>
+                            <div>
+                                <p class="font-semibold text-slate-900">Project Dibuat</p>
+                                <p class="text-xs text-gray-500">
+                                    {{ $project->created_at->format('d M Y') }}
+                                </p>
+                            </div>
+                        </div>
 
-        {{-- PROJECT CREATED --}}
-        <div class="relative">
-            <div class="absolute -left-8 top-0 w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs">
-                ✓
-            </div>
-            <div>
-                <p class="font-semibold text-slate-900">Project Dibuat</p>
-                <p class="text-xs text-gray-500">
-                    {{ $project->created_at->format('d M Y') }}
-                </p>
-            </div>
-        </div>
+                        <div class="relative">
+                            <div class="absolute -left-8 top-0 w-6 h-6 rounded-full
+                                {{ $project->assignments->count() > 0 ? 'bg-green-500' : 'bg-slate-300' }}
+                                text-white flex items-center justify-center text-xs">
+                                {{ $project->assignments->count() > 0 ? '✓' : '•' }}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-slate-900">Pegawai Ditugaskan</p>
+                                <p class="text-xs text-gray-500">
+                                    {{ $project->assignments->count() }} pegawai assigned
+                                </p>
+                            </div>
+                        </div>
 
-        {{-- ASSIGNED --}}
-        <div class="relative">
-            <div class="absolute -left-8 top-0 w-6 h-6 rounded-full
-                {{ $project->assignments->count() > 0 ? 'bg-green-500' : 'bg-slate-300' }}
-                text-white flex items-center justify-center text-xs">
-                {{ $project->assignments->count() > 0 ? '✓' : '•' }}
-            </div>
-            <div>
-                <p class="font-semibold text-slate-900">Pegawai Ditugaskan</p>
-                <p class="text-xs text-gray-500">
-                    {{ $project->assignments->count() }} pegawai assigned
-                </p>
-            </div>
-        </div>
+                        <div class="relative">
+                            <div class="absolute -left-8 top-0 w-6 h-6 rounded-full
+                                {{ $projectProgress > 0 ? 'bg-blue-500' : 'bg-slate-300' }}
+                                text-white flex items-center justify-center text-xs">
+                                {{ $projectProgress > 0 ? '✓' : '•' }}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-slate-900">Produksi Berjalan</p>
+                                <p class="text-xs text-gray-500">
+                                    Progress saat ini {{ $projectProgress }}%
+                                </p>
+                            </div>
+                        </div>
 
-        {{-- IN PROGRESS --}}
-        <div class="relative">
-            <div class="absolute -left-8 top-0 w-6 h-6 rounded-full
-                {{ $project->progress_percent > 0 ? 'bg-blue-500' : 'bg-slate-300' }}
-                text-white flex items-center justify-center text-xs">
-                {{ $project->progress_percent > 0 ? '✓' : '•' }}
-            </div>
-            <div>
-                <p class="font-semibold text-slate-900">Produksi Berjalan</p>
-                <p class="text-xs text-gray-500">
-                    Progress saat ini {{ $project->progress_percent }}%
-                </p>
-            </div>
-        </div>
+                        @php
+                            $pendingApproval = $project->workUpdates
+                                ->where('validation_status', 'pending')
+                                ->count();
+                        @endphp
 
-        {{-- NEED APPROVAL --}}
-        @php
-            $pendingApproval = $project->workUpdates
-                ->where('validation_status', 'pending')
-                ->count();
-        @endphp
+                        <div class="relative">
+                            <div class="absolute -left-8 top-0 w-6 h-6 rounded-full
+                                {{ $pendingApproval > 0 ? 'bg-yellow-500' : 'bg-slate-300' }}
+                                text-white flex items-center justify-center text-xs">
+                                {{ $pendingApproval > 0 ? '!' : '•' }}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-slate-900">Menunggu Approval</p>
+                                <p class="text-xs text-gray-500">
+                                    {{ $pendingApproval }} update menunggu validasi pimpinan
+                                </p>
+                            </div>
+                        </div>
 
-        <div class="relative">
-            <div class="absolute -left-8 top-0 w-6 h-6 rounded-full
-                {{ $pendingApproval > 0 ? 'bg-yellow-500' : 'bg-slate-300' }}
-                text-white flex items-center justify-center text-xs">
-                {{ $pendingApproval > 0 ? '!' : '•' }}
-            </div>
-            <div>
-                <p class="font-semibold text-slate-900">Menunggu Approval</p>
-                <p class="text-xs text-gray-500">
-                    {{ $pendingApproval }} update menunggu validasi pimpinan
-                </p>
-            </div>
-        </div>
-
-        {{-- DONE --}}
-        <div class="relative">
-            <div class="absolute -left-8 top-0 w-6 h-6 rounded-full
-                {{ $project->progress_percent >= 100 ? 'bg-green-500' : 'bg-slate-300' }}
-                text-white flex items-center justify-center text-xs">
-                {{ $project->progress_percent >= 100 ? '✓' : '•' }}
-            </div>
-            <div>
-                <p class="font-semibold text-slate-900">Project Selesai</p>
-                <p class="text-xs text-gray-500">
-                    {{ $project->progress_percent >= 100 ? 'Selesai 100%' : 'Belum selesai' }}
-                </p>
-            </div>
-        </div>
-
-    </div>
-</div>
+                        <div class="relative">
+                            <div class="absolute -left-8 top-0 w-6 h-6 rounded-full
+                                {{ $projectProgress >= 100 ? 'bg-green-500' : 'bg-slate-300' }}
+                                text-white flex items-center justify-center text-xs">
+                                {{ $projectProgress >= 100 ? '✓' : '•' }}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-slate-900">Project Selesai</p>
+                                <p class="text-xs text-gray-500">
+                                    {{ $projectProgress >= 100 ? 'Selesai 100%' : 'Belum selesai' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {{-- ORDER SUMMARY --}}
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                     <h3 class="text-lg font-bold text-slate-900 mb-4">Ringkasan Order</h3>
 
-                    <div class="space-y-3 text-sm">
+                    <div class="space-y-4 text-sm">
                         <div>
                             <p class="text-gray-500">Perusahaan</p>
                             <p class="font-semibold text-slate-900">
-                                {{ $project->order->company_name }}
+                                {{ $order->company_name ?? '-' }}
                             </p>
                         </div>
 
                         <div>
                             <p class="text-gray-500">Jenis Perusahaan</p>
                             <p class="font-semibold text-slate-900">
-                                {{ $project->order->company_type }}
+                                {{ $order->company_type ?? '-' }}
                             </p>
                         </div>
 
-                        <div>
-                            <p class="text-gray-500">Spesifikasi</p>
-                            <p class="text-slate-600">
-                                {{ $project->order->product_spec }}
-                            </p>
+                        <div class="pt-3 border-t">
+                            <p class="text-gray-500 mb-2">Produk Dipesan</p>
+
+                            <div class="space-y-3">
+                                @forelse($orderItems as $item)
+                                    @php
+                                        $productName = $item->product->product_name ?? '-';
+                                        $variantName = $item->variant->type_name ?? '-';
+
+                                        $volumeText = '-';
+
+                                        if (!empty($item->selectedVolume)) {
+                                            $volumeText = ($item->selectedVolume->volume_value ?? '-') . ' ' . ($item->selectedVolume->unit ?? '');
+                                        } elseif (!empty($item->variantVolume)) {
+                                            $volumeText = ($item->variantVolume->volume_value ?? '-') . ' ' . ($item->variantVolume->unit ?? '');
+                                        } elseif (!empty($item->volume) && !is_object($item->volume)) {
+                                            $volumeText = $item->volume;
+                                        }
+                                    @endphp
+
+                                    <div class="bg-slate-50 rounded-xl p-3">
+                                        <p class="font-semibold text-slate-900">
+                                            {{ $productName }}
+                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1">
+                                            {{ $variantName }} • {{ $volumeText }} • Qty: {{ $item->quantity ?? '-' }}
+                                        </p>
+
+                                        @if(!empty($item->product_spec))
+                                            <p class="text-xs text-slate-600 mt-2">
+                                                {{ $item->product_spec }}
+                                            </p>
+                                        @endif
+                                    </div>
+                                @empty
+                                    <div class="bg-slate-50 rounded-xl p-3">
+                                        <p class="font-semibold text-slate-900">
+                                            {{ $order->product->product_name ?? '-' }}
+                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1">
+                                            {{ $order->product_spec ?? '-' }}
+                                        </p>
+                                    </div>
+                                @endforelse
+                            </div>
                         </div>
 
-                        @if($project->order->contract_file)
+                        @if($order->contract_file)
                             <div class="pt-3 border-t">
-                                <a href="{{ asset('storage/'.$project->order->contract_file) }}"
+                                <a href="{{ asset('storage/'.$order->contract_file) }}"
                                    target="_blank"
                                    class="text-blue-600 font-semibold text-sm">
                                     Download Kontrak

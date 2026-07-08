@@ -25,12 +25,14 @@ class AdminDashboardController extends Controller
         $periodLabel = $startDate->translatedFormat('d M Y') . ' - ' . $endDate->translatedFormat('d M Y');
 
         $orderQuery = Order::whereBetween('created_at', [$startDate, $endDate]);
+        $projectQuery = Project::whereBetween('created_at', [$startDate, $endDate]);
 
         $totalOrders = (clone $orderQuery)->count();
         $pending = (clone $orderQuery)->where('status_verify', 'pending')->count();
         $approved = (clone $orderQuery)->where('status_verify', 'approved')->count();
         $rejected = (clone $orderQuery)->where('status_verify', 'rejected')->count();
-        $acceleratedOrders = (clone $orderQuery)->where('requires_acceleration', true)->count();
+
+        $completedProjects = (clone $projectQuery)->where('status', 'done')->count();
 
         $totalClients = User::where('role', 'client')->count();
 
@@ -42,17 +44,11 @@ class AdminDashboardController extends Controller
         |--------------------------------------------------------------------------
         | Perlu Tindakan
         |--------------------------------------------------------------------------
-        | Data ini digunakan untuk menampilkan aktivitas yang perlu segera
-        | ditindaklanjuti oleh admin pada dashboard.
         */
         $pendingOrders = Order::where('status_verify', 'pending')->count();
 
         $pendingClients = User::where('role', 'client')
             ->where('is_approved', false)
-            ->count();
-
-        $accelerationOrders = Order::where('requires_acceleration', true)
-            ->where('status_verify', 'approved')
             ->count();
 
         $deadlineProjects = Project::where('status', '!=', 'done')
@@ -131,14 +127,13 @@ class AdminDashboardController extends Controller
             'pending',
             'approved',
             'rejected',
-            'acceleratedOrders',
+            'completedProjects',
             'totalClients',
             'projectNotStarted',
             'projectInProgress',
             'projectDone',
             'pendingOrders',
             'pendingClients',
-            'accelerationOrders',
             'deadlineProjects',
             'latestOrders',
             'trendLabels',

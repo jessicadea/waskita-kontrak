@@ -248,6 +248,89 @@ class ProjectController extends Controller
         ];
     }
 
+    private function calculateProjectProgress(Project $project): float
+    {
+        $project->loadMissing([
+            'order.items',
+            'stages',
+        ]);
+
+        $orderItems = $project->order?->items ?? collect();
+
+        if ($orderItems->count() > 0) {
+            $totalProductProgress = 0;
+            $productCount = 0;
+
+            foreach ($orderItems as $item) {
+                $itemStages = $project->stages->where('order_item_id', $item->id);
+
+                if ($itemStages->count() === 0) {
+                    continue;
+                }
+
+                $totalWeight = (float) $itemStages->sum('weight_percent');
+                $approvedWeight = (float) $itemStages
+                    ->where('status', 'approved')
+                    ->sum('weight_percent');
+
+                $productProgress = $totalWeight > 0
+                    ? ($approvedWeight / $totalWeight) * 100
+                    : 0;
+
+                $totalProductProgress += min(100, $productProgress);
+                $productCount++;
+            }
+
+            if ($productCount === 0) {
+                return 0;
+            }
+
+            return round($totalProductProgress / $productCount, 2);
+        }
+
+        $stages = $project->stages;
+
+        if ($stages->count() === 0) {
+            return 0;
+        }
+
+        $totalWeight = (float) $stages->sum('weight_percent');
+        $approvedWeight = (float) $stages
+            ->where('status', 'approved')
+            ->sum('weight_percent');
+
+        $progress = $totalWeight > 0
+            ? ($approvedWeight / $totalWeight) * 100
+            : 0;
+
+        return round(min(100, $progress), 2);
+    }
+
+    private function syncProjectProgress(Project $project): Project
+    {
+        $progress = $this->calculateProjectProgress($project);
+
+        $status = 'not_started';
+
+        if ($progress > 0 && $progress < 100) {
+            $status = 'in_progress';
+        }
+
+        if ($progress >= 100) {
+            $status = 'done';
+        }
+
+        $project->update([
+            'progress_percent' => $progress,
+            'status' => $status,
+        ]);
+
+        $project->progress_percent = $progress;
+        $project->status = $status;
+
+        return $project;
+    }
+
     public function show($id)
     {
         $project = Project::with([
@@ -266,6 +349,25 @@ class ProjectController extends Controller
             'stages.orderItem.variant',
             'stages.orderItem.selectedVolume',
         ])->findOrFail($id);
+
+        $this->syncProjectProgress($project);
+
+        $project->load([
+            'order.user',
+            'order.product',
+            'order.variant',
+            'order.selectedVolume',
+            'order.items.product',
+            'order.items.variant',
+            'order.items.selectedVolume',
+            'assignments.employee',
+            'logs',
+            'workUpdates',
+            'stages.employee',
+            'stages.orderItem.product',
+            'stages.orderItem.variant',
+            'stages.orderItem.selectedVolume',
+        ]);
 
         $employees = Employee::all();
 
@@ -317,6 +419,10 @@ class ProjectController extends Controller
 
         $projects = $query->latest()->get();
 
+        foreach ($projects as $project) {
+            $this->syncProjectProgress($project);
+        }
+
         $summary = [
             'total' => $projects->count(),
             'not_started' => $projects->where('status', 'not_started')->count(),
@@ -326,7 +432,7 @@ class ProjectController extends Controller
 
         return view('client.projects.index', compact('projects', 'summary'));
     }
-    
+
     public function monitoring($id)
     {
         $project = Project::with([
@@ -354,6 +460,29 @@ class ProjectController extends Controller
             })
             ->findOrFail($id);
 
+        $this->syncProjectProgress($project);
+
+        $project->load([
+            'order.user',
+            'order.product',
+            'order.variant',
+            'order.selectedVolume',
+            'order.items.product',
+            'order.items.variant',
+            'order.items.selectedVolume',
+            'logs' => function ($q) {
+                $q->oldest();
+            },
+            'workUpdates' => function ($q) {
+                $q->where('validation_status', 'approved')->latest();
+            },
+            'workUpdates.employee',
+            'stages.employee',
+            'stages.orderItem.product',
+            'stages.orderItem.variant',
+            'stages.orderItem.selectedVolume',
+        ]);
+
         return view('client.projects.monitoring', compact('project'));
     }
 
@@ -364,7 +493,12 @@ class ProjectController extends Controller
             'order.items.product',
             'assignments.employee',
             'workUpdates',
+            'stages',
         ])->latest()->get();
+
+        foreach ($projects as $project) {
+            $this->syncProjectProgress($project);
+        }
 
         $needApprovalProjects = $projects->filter(function ($project) {
             return $project->workUpdates
@@ -398,10 +532,16 @@ class ProjectController extends Controller
         })
             ->with([
                 'order.items.product',
+                'order.items.variant',
+                'order.items.selectedVolume',
                 'stages.orderItem.product',
                 'stages.employee',
             ])
             ->get();
+
+        foreach ($projects as $project) {
+            $this->syncProjectProgress($project);
+        }
 
         return view('pegawai.projects.index', compact('projects'));
     }
@@ -415,6 +555,7 @@ class ProjectController extends Controller
             'order.selectedVolume',
             'order.items.product',
             'order.items.variant',
+            'order.items.selectedVolume',
             'logs',
             'stages.employee',
             'stages.orderItem.product',
@@ -428,6 +569,23 @@ class ProjectController extends Controller
             })
             ->findOrFail($id);
 
+        $this->syncProjectProgress($project);
+
+        $project->load([
+            'order.user',
+            'order.product',
+            'order.variant',
+            'order.selectedVolume',
+            'order.items.product',
+            'order.items.variant',
+            'order.items.selectedVolume',
+            'logs',
+            'stages.employee',
+            'stages.orderItem.product',
+            'stages.orderItem.variant',
+            'stages.orderItem.selectedVolume',
+        ]);
+
         return view('pegawai.projects.show', compact('project'));
     }
 
@@ -436,11 +594,17 @@ class ProjectController extends Controller
         $projects = Project::with([
             'order.user',
             'order.items.product',
+            'order.items.variant',
+            'order.items.selectedVolume',
             'assignments.employee',
             'workUpdates',
             'stages.employee',
             'stages.orderItem.product',
         ])->latest()->get();
+
+        foreach ($projects as $project) {
+            $this->syncProjectProgress($project);
+        }
 
         return view('pimpinan.projects.index', compact('projects'));
     }

@@ -204,10 +204,13 @@
                     </div>
 
                     <div class="mt-5 bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm">
-                        <p class="font-semibold text-slate-800 mb-2">Ringkasan Pesanan</p>
-                        <p class="text-slate-600">
-                            Client dapat memilih lebih dari satu produk dalam satu kontrak.
-                        </p>
+                        <p class="font-semibold text-slate-800 mb-3">Ringkasan Pesanan</p>
+
+                        <div id="orderSummaryList" class="space-y-3">
+                            <p class="text-slate-600">
+                                Belum ada produk yang dipilih.
+                            </p>
+                        </div>
                     </div>
 
                     <div id="priceEstimateBox"
@@ -293,9 +296,98 @@
             }).format(value || 0);
         }
 
+        function getSelectedText(selectElement) {
+            if (!selectElement || !selectElement.value) {
+                return '-';
+            }
+
+            return selectElement.options[selectElement.selectedIndex]?.text?.trim() || '-';
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        function updateOrderSummary() {
+            const summaryList = document.getElementById('orderSummaryList');
+
+            if (!summaryList) {
+                return;
+            }
+
+            const items = document.querySelectorAll('.order-item');
+            let html = '';
+            let hasSummary = false;
+
+            items.forEach((item, index) => {
+                const productSelect = item.querySelector('.productSelect');
+                const variantSelect = item.querySelector('.variantSelect');
+                const volumeSelect = item.querySelector('.volumeSelect');
+                const quantityInput = item.querySelector('.quantityInput');
+
+                const productName = getSelectedText(productSelect);
+                const variantName = getSelectedText(variantSelect);
+                const volumeName = getSelectedText(volumeSelect);
+                const quantity = quantityInput?.value || '-';
+
+                const hasData =
+                    productSelect?.value ||
+                    variantSelect?.value ||
+                    volumeSelect?.value ||
+                    quantityInput?.value;
+
+                if (!hasData) {
+                    return;
+                }
+
+                hasSummary = true;
+
+                html += `
+                    <div class="border-b border-slate-200 pb-3 last:border-b-0">
+                        <p class="font-semibold text-slate-800 mb-1">
+                            Produk ${index + 1}
+                        </p>
+
+                        <div class="space-y-1 text-slate-600">
+                            <div class="flex justify-between gap-3">
+                                <span>Jenis Produk</span>
+                                <span class="font-medium text-slate-800 text-right">${escapeHtml(productName)}</span>
+                            </div>
+
+                            <div class="flex justify-between gap-3">
+                                <span>Type Produk</span>
+                                <span class="font-medium text-slate-800 text-right">${escapeHtml(variantName)}</span>
+                            </div>
+
+                            <div class="flex justify-between gap-3">
+                                <span>Volume / Ukuran</span>
+                                <span class="font-medium text-slate-800 text-right">${escapeHtml(volumeName)}</span>
+                            </div>
+
+                            <div class="flex justify-between gap-3">
+                                <span>Quantity</span>
+                                <span class="font-medium text-slate-800 text-right">${escapeHtml(quantity)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            summaryList.innerHTML = hasSummary
+                ? html
+                : `<p class="text-slate-600">Belum ada produk yang dipilih.</p>`;
+        }
+
         async function calculatePriceEstimate() {
             const deliveryDate = document.getElementById('delivery_date')?.value;
             const box = document.getElementById('priceEstimateBox');
+
+            updateOrderSummary();
 
             if (!deliveryDate) {
                 box.classList.add('hidden');
@@ -366,6 +458,7 @@
                 volumeSelect.innerHTML = '<option value="">Pilih volume</option>';
                 variantsData = [];
 
+                updateOrderSummary();
                 calculatePriceEstimate();
 
                 if (!productId) return;
@@ -381,6 +474,8 @@
                             option.textContent = variant.type_name;
                             variantSelect.appendChild(option);
                         });
+
+                        updateOrderSummary();
                     })
                     .catch(error => {
                         console.error('Product variant error:', error);
@@ -392,6 +487,7 @@
 
                 volumeSelect.innerHTML = '<option value="">Pilih volume</option>';
 
+                updateOrderSummary();
                 calculatePriceEstimate();
 
                 if (!selectedVariant) return;
@@ -402,14 +498,24 @@
                     option.textContent = `${volume.volume_value} ${volume.unit}`;
                     volumeSelect.appendChild(option);
                 });
+
+                updateOrderSummary();
             });
 
-            volumeSelect.addEventListener('change', calculatePriceEstimate);
-            quantityInput.addEventListener('input', calculatePriceEstimate);
+            volumeSelect.addEventListener('change', function () {
+                updateOrderSummary();
+                calculatePriceEstimate();
+            });
+
+            quantityInput.addEventListener('input', function () {
+                updateOrderSummary();
+                calculatePriceEstimate();
+            });
 
             removeBtn.addEventListener('click', function () {
                 item.remove();
                 refreshItemTitles();
+                updateOrderSummary();
                 calculatePriceEstimate();
             });
         }
@@ -428,6 +534,8 @@
                     removeBtn.classList.add('hidden');
                 }
             });
+
+            updateOrderSummary();
         }
 
         addItemBtn.addEventListener('click', function () {
@@ -490,10 +598,14 @@
             const newItem = itemsWrapper.lastElementChild;
 
             bindItemEvents(newItem);
-            window.initSearchableSelect('.searchable-select', newItem);
+
+            if (window.initSearchableSelect) {
+                window.initSearchableSelect('.searchable-select', newItem);
+            }
 
             itemIndex++;
             refreshItemTitles();
+            updateOrderSummary();
             calculatePriceEstimate();
         });
 
@@ -504,9 +616,13 @@
         const deliveryDateInput = document.getElementById('delivery_date');
 
         if (deliveryDateInput) {
-            deliveryDateInput.addEventListener('change', calculatePriceEstimate);
+            deliveryDateInput.addEventListener('change', function () {
+                updateOrderSummary();
+                calculatePriceEstimate();
+            });
         }
 
         refreshItemTitles();
+        updateOrderSummary();
     </script>
 </x-app-layout>

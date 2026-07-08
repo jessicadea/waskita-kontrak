@@ -14,7 +14,13 @@ class EmployeeWorkUpdateController extends Controller
     {
         $employee = Employee::where('user_id', auth()->id())->firstOrFail();
 
-        $updates = EmployeeWorkUpdate::with(['project', 'stage'])
+        $updates = EmployeeWorkUpdate::with([
+            'project',
+            'stage',
+            'stage.orderItem.product',
+            'stage.orderItem.variant',
+            'stage.orderItem.selectedVolume',
+        ])
             ->where('employee_id', $employee->id)
             ->latest()
             ->get();
@@ -29,7 +35,14 @@ class EmployeeWorkUpdateController extends Controller
 
         if ($projectId) {
             $project = Project::with([
+                'order.user',
+                'order.items.product',
+                'order.items.variant',
+                'order.items.selectedVolume',
+                'stages.project',
                 'stages.orderItem.product',
+                'stages.orderItem.variant',
+                'stages.orderItem.selectedVolume',
                 'stages.employee',
                 'assignments',
             ])->findOrFail($projectId);
@@ -51,8 +64,16 @@ class EmployeeWorkUpdateController extends Controller
         $project = null;
 
         $projects = Project::with([
+            'order.user',
+            'order.items.product',
+            'order.items.variant',
+            'order.items.selectedVolume',
+            'stages.project',
             'stages.orderItem.product',
+            'stages.orderItem.variant',
+            'stages.orderItem.selectedVolume',
             'stages.employee',
+            'assignments',
         ])
             ->whereHas('assignments', function ($q) use ($employee) {
                 $q->where('employee_id', $employee->id);
@@ -71,7 +92,13 @@ class EmployeeWorkUpdateController extends Controller
     private function getAvailableNextStages(Project $project)
     {
         $stages = $project->stages()
-            ->with(['orderItem.product', 'project'])
+            ->with([
+                'project',
+                'orderItem.product',
+                'orderItem.variant',
+                'orderItem.selectedVolume',
+                'employee',
+            ])
             ->orderBy('order_item_id')
             ->orderBy('id')
             ->get()
@@ -108,6 +135,8 @@ class EmployeeWorkUpdateController extends Controller
             'project.stages',
             'project.assignments',
             'orderItem.product',
+            'orderItem.variant',
+            'orderItem.selectedVolume',
         ])
             ->where('id', $request->stage_id)
             ->whereHas('project.assignments', function ($q) use ($employee) {

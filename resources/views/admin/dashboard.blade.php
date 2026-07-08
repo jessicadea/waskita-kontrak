@@ -101,9 +101,9 @@
             </div>
 
             <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                <p class="text-orange-600 text-sm font-medium">Percepatan Produksi</p>
-                <h3 class="text-3xl font-black text-orange-600 mt-2">{{ $acceleratedOrders }}</h3>
-                <p class="text-xs text-gray-400 mt-4">Order yang mengajukan percepatan.</p>
+                <p class="text-blue-600 text-sm font-medium">Project Selesai</p>
+                <h3 class="text-3xl font-black text-blue-600 mt-2">{{ $completedProjects }}</h3>
+                <p class="text-xs text-gray-400 mt-4">Project yang selesai pada periode terpilih.</p>
             </div>
         </div>
 
@@ -139,10 +139,10 @@
                     <div class="text-xs text-orange-700 mt-2">Deadline ≤ 7 hari.</div>
                 </div>
 
-                <div class="rounded-xl border border-red-200 bg-red-50 p-4">
-                    <div class="text-red-600 font-semibold text-sm">Percepatan Produksi</div>
-                    <div class="text-3xl font-black mt-2">{{ $accelerationOrders }}</div>
-                    <div class="text-xs text-red-700 mt-2">Memerlukan prioritas produksi.</div>
+                <div class="rounded-xl border border-green-200 bg-green-50 p-4">
+                    <div class="text-green-600 font-semibold text-sm">Project Selesai</div>
+                    <div class="text-3xl font-black mt-2">{{ $projectDone }}</div>
+                    <div class="text-xs text-green-700 mt-2">Project yang telah selesai 100%.</div>
                 </div>
             </div>
         </div>

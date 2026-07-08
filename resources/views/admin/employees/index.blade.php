@@ -1,42 +1,96 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="text-2xl font-semibold">Data Pegawai</h2>
-    </x-slot>
+    <div class="max-w-7xl mx-auto py-8 px-4">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Data Pegawai</h1>
+                <p class="text-sm text-gray-500">Kelola data pegawai yang dapat ditugaskan ke project.</p>
+            </div>
 
-    <div class="space-y-6">
-        @if(session('success'))
-            <div class="bg-green-100 text-green-800 p-4 rounded-xl">
+            <a href="{{ route('admin.employees.create') }}"
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-block">
+                + Tambah Pegawai
+            </a>
+        </div>
+
+        @if (session('success'))
+            <div class="mb-4 rounded-lg bg-green-100 text-green-700 p-4">
                 {{ session('success') }}
             </div>
         @endif
 
-        <a href="/admin/employees/create" class="bg-blue-600 text-white px-4 py-2 rounded-lg inline-block">
-            + Tambah Pegawai
-        </a>
-
-        <div class="bg-white rounded-xl shadow p-6">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b text-left">
-                        <th class="py-3">Nama Pegawai</th>
-                        <th>User Login</th>
-                        <th>Supervisor</th>
-                        <th>Jabatan</th>
-                        <th>Status</th>
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <table class="w-full border-collapse">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">No</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nama Pegawai</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">No. Telepon</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Jabatan</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Aksi</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    @forelse($employees as $employee)
-                        <tr class="border-b">
-                            <td class="py-3">{{ $employee->employee_name }}</td>
-                            <td>{{ $employee->user->email }}</td>
-                            <td>{{ $employee->supervisor->name ?? '-' }}</td>
-                            <td>{{ $employee->position }}</td>
-                            <td>{{ ucfirst($employee->status) }}</td>
+                    @forelse ($employees as $employee)
+                        <tr class="border-t">
+                            <td class="px-4 py-3 text-sm text-gray-700">
+                                {{ $loop->iteration }}
+                            </td>
+
+                            <td class="px-4 py-3 text-sm text-gray-700">
+                                {{ $employee->employee_name }}
+                            </td>
+
+                            <td class="px-4 py-3 text-sm text-gray-700">
+                                {{ $employee->user->email ?? '-' }}
+                            </td>
+
+                            <td class="px-4 py-3 text-sm text-gray-700">
+                                {{ $employee->user->phone ?? '-' }}
+                            </td>
+
+                            <td class="px-4 py-3 text-sm text-gray-700">
+                                {{ $employee->position ?? '-' }}
+                            </td>
+
+                            <td class="px-4 py-3 text-sm">
+                                @if ($employee->status === 'active')
+                                    <span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                                        Aktif
+                                    </span>
+                                @else
+                                    <span class="px-3 py-1 rounded-full text-xs bg-red-100 text-red-700">
+                                        Tidak Aktif
+                                    </span>
+                                @endif
+                            </td>
+
+                            <td class="px-4 py-3 text-sm">
+                                <div class="flex gap-2">
+                                    <a href="{{ route('admin.employees.edit', $employee->id) }}"
+                                       class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm">
+                                        Edit
+                                    </a>
+
+                                    <form action="{{ route('admin.employees.destroy', $employee->id) }}"
+                                          method="POST"
+                                          onsubmit="return confirm('Yakin ingin menonaktifkan pegawai ini?')">
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button type="submit"
+                                                class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
+                                            Nonaktifkan
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="py-6 text-center text-gray-500">
+                            <td colspan="7" class="px-4 py-6 text-center text-gray-500">
                                 Belum ada data pegawai.
                             </td>
                         </tr>

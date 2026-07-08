@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\ClientDashboardController;
 use App\Http\Controllers\AdminDashboardController;
@@ -77,8 +77,7 @@ Route::middleware(['auth', 'role:client'])
         Route::get('/projects', [ProjectController::class, 'clientProjects'])->name('projects.index');
         Route::get('/projects/{id}/monitoring', [ProjectController::class, 'monitoring'])->name('projects.monitoring');
 
-        Route::get('/laporan', [CompletionReportController::class, 'clientReports'])
-        ->name('reports.index');
+        Route::get('/laporan', [CompletionReportController::class, 'clientReports'])->name('reports.index');
     });
 
 /*
@@ -92,11 +91,21 @@ Route::middleware(['auth', 'role:admin'])
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
+        /*
+        |--------------------------------------------------------------------------
+        | ADMIN - PESANAN
+        |--------------------------------------------------------------------------
+        */
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
         Route::post('/orders/{id}/verify', [OrderController::class, 'verify'])->name('orders.verify');
         Route::post('/orders/{id}/contract', [OrderController::class, 'uploadContract'])->name('orders.contract');
 
+        /*
+        |--------------------------------------------------------------------------
+        | ADMIN - PROJECT
+        |--------------------------------------------------------------------------
+        */
         Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
         Route::get('/projects/create/{order_id}', [ProjectController::class, 'create'])->name('projects.create');
         Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
@@ -105,6 +114,11 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::get('/project-board', [ProjectController::class, 'board'])->name('projects.board');
 
+        /*
+        |--------------------------------------------------------------------------
+        | ADMIN - CRUD PEGAWAI
+        |--------------------------------------------------------------------------
+        */
         Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
         Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
         Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
@@ -112,6 +126,11 @@ Route::middleware(['auth', 'role:admin'])
         Route::put('/employees/{id}', [EmployeeController::class, 'update'])->name('employees.update');
         Route::delete('/employees/{id}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
 
+        /*
+        |--------------------------------------------------------------------------
+        | ADMIN - APPROVAL USER CLIENT
+        |--------------------------------------------------------------------------
+        */
         Route::get('/users', [UserApprovalController::class, 'index'])->name('users.index');
         Route::post('/users/{id}/approve', [UserApprovalController::class, 'approve'])->name('users.approve');
         Route::delete('/users/{id}/reject', [UserApprovalController::class, 'reject'])->name('users.reject');
@@ -169,13 +188,18 @@ Route::middleware(['auth'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| API INTERNAL
+| API INTERNAL - PRODUCT VARIANTS
 |--------------------------------------------------------------------------
 */
 Route::get('/api/products/{id}/variants', function ($id) {
     return \App\Models\Product::with('variants.volumes')->findOrFail($id);
 });
 
+/*
+|--------------------------------------------------------------------------
+| API INTERNAL - ESTIMASI
+|--------------------------------------------------------------------------
+*/
 Route::get('/api/estimate-workers', function (Request $request) {
     $request->validate([
         'product_id' => 'required',
@@ -261,4 +285,4 @@ Route::get('/api/estimate-workers', function (Request $request) {
     ]);
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
