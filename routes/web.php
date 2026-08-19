@@ -114,6 +114,9 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::get('/project-board', [ProjectController::class, 'board'])->name('projects.board');
 
+        // Route::get('/admin/projects', [ProjectController::class, 'index'])
+        // ->name('admin.projects.index');
+
         /*
         |--------------------------------------------------------------------------
         | ADMIN - CRUD PEGAWAI
@@ -153,6 +156,9 @@ Route::middleware(['auth', 'role:pegawai'])
         Route::get('/work-updates', [EmployeeWorkUpdateController::class, 'index'])->name('work-updates.index');
         Route::get('/work-updates/create', [EmployeeWorkUpdateController::class, 'create'])->name('work-updates.create');
         Route::post('/work-updates', [EmployeeWorkUpdateController::class, 'store'])->name('work-updates.store');
+
+        Route::get('/admin/employees', [EmployeeController::class, 'index'])
+        ->name('admin.employees.index');
     });
 
 /*

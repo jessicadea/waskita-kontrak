@@ -44,6 +44,15 @@
                 </div>
 
                 <div>
+                    <label for="gender">Gender</label>
+                    <select name="gender" id="gender">
+                        <option value="">Pilih Gender</option>
+                        <option value="Laki-laki" {{ old('gender', $employee->gender) == 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
+                        <option value="Perempuan" {{ old('gender', $employee->gender) == 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
+                    </select>
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium mb-1">Jabatan</label>
                     <input type="text"
                            name="position"

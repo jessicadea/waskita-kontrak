@@ -32,7 +32,8 @@ class EmployeeController extends Controller
             'phone' => 'nullable|string|max:20',
             'position' => 'nullable|string|max:255',
             'status' => 'required|in:active,inactive',
-            'password' => 'nullable|string|min:8',
+            'password' => ['nullable', 'string', \Illuminate\Validation\Rules\Password::defaults()],
+            'gender' => 'nullable|in:Laki-laki,Perempuan',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -44,6 +45,7 @@ class EmployeeController extends Controller
                 'name' => $request->employee_name,
                 'email' => $request->email,
                 'phone' => $request->phone,
+                'gender' => $request->gender,
                 'password' => Hash::make($password),
                 'role' => 'pegawai',
                 'is_approved' => true,
@@ -55,6 +57,7 @@ class EmployeeController extends Controller
                 'employee_name' => $request->employee_name,
                 'position' => $request->position ?: 'Mandor',
                 'status' => $request->status,
+                'gender' => $request->gender,
             ]);
         });
 
@@ -80,7 +83,8 @@ class EmployeeController extends Controller
             'phone' => 'nullable|string|max:20',
             'position' => 'nullable|string|max:255',
             'status' => 'required|in:active,inactive',
-            'password' => 'nullable|string|min:8',
+            'password' => ['nullable', 'string', \Illuminate\Validation\Rules\Password::defaults()],
+            'gender' => 'nullable|in:Laki-laki,Perempuan', 
         ]);
 
         DB::transaction(function () use ($request, $employee) {
@@ -88,6 +92,7 @@ class EmployeeController extends Controller
                 'employee_name' => $request->employee_name,
                 'position' => $request->position ?: 'Mandor',
                 'status' => $request->status,
+                'gender' => $request->gender,
             ]);
 
             if ($employee->user) {
@@ -95,6 +100,7 @@ class EmployeeController extends Controller
                     'name' => $request->employee_name,
                     'email' => $request->email,
                     'phone' => $request->phone,
+                    'gender'=> $request->gender,
                     'role' => 'pegawai',
                     'is_approved' => true,
                 ];

@@ -51,6 +51,15 @@
             </div>
 
             <div>
+                <label for="gender">Gender</label>
+                <select name="gender" id="gender">
+                    <option value="">Pilih Gender</option>
+                    <option value="Laki-laki" {{ old('gender') == 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
+                    <option value="Perempuan" {{ old('gender') == 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
+                </select>
+            </div>
+
+            <div>
                 <label class="block mb-1 text-sm font-medium">Jabatan</label>
                 <input type="text"
                        value="Mandor"

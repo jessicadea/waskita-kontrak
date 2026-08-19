@@ -36,9 +36,9 @@ class AdminDashboardController extends Controller
 
         $totalClients = User::where('role', 'client')->count();
 
-        $projectNotStarted = Project::where('status', 'not_started')->count();
-        $projectInProgress = Project::where('status', 'in_progress')->count();
-        $projectDone = Project::where('status', 'done')->count();
+        $projectNotStarted = (clone $projectQuery)->where('status', 'not_started')->count();
+        $projectInProgress = (clone $projectQuery)->where('status', 'in_progress')->count();
+        $projectDone = (clone $projectQuery)->where('status', 'done')->count();
 
         /*
         |--------------------------------------------------------------------------

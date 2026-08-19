@@ -10,6 +10,7 @@
         @csrf
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {{-- KIRI: FORM UTAMA --}}
             <div class="lg:col-span-2">
                 <x-ui.card>
                     <div id="itemsWrapper">
@@ -97,7 +98,7 @@
                             <label class="text-sm font-medium">Nama Perusahaan *</label>
                             <input type="text"
                                    name="company_name"
-                                   value="{{ auth()->user()->name }}"
+                                   value="{{ old('company_name', auth()->user()->name) }}"
                                    class="mt-1 w-full rounded-xl border-slate-200">
                             @error('company_name')
                                 <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
@@ -108,6 +109,7 @@
                             <label class="text-sm font-medium">Jenis Perusahaan *</label>
                             <input type="text"
                                    name="company_type"
+                                   value="{{ old('company_type') }}"
                                    placeholder="Contoh: Kontraktor / Developer"
                                    class="mt-1 w-full rounded-xl border-slate-200">
                             @error('company_type')
@@ -119,6 +121,7 @@
                             <label class="text-sm font-medium">Nama Project *</label>
                             <input type="text"
                                    name="project_name"
+                                   value="{{ old('project_name') }}"
                                    placeholder="Nama project"
                                    class="mt-1 w-full rounded-xl border-slate-200">
                             @error('project_name')
@@ -126,46 +129,44 @@
                             @enderror
                         </div>
 
+                        {{-- Lokasi Project --}}
                         <div>
                             <label class="text-sm font-medium">Lokasi Project *</label>
-                            <select name="project_location"
-                                    class="searchable-select mt-1 w-full rounded-xl border-slate-200">
-                                <option value="">Pilih lokasi project</option>
-                                <option value="Jakarta, DKI Jakarta">Jakarta, DKI Jakarta</option>
-                                <option value="Bekasi, Jawa Barat">Bekasi, Jawa Barat</option>
-                                <option value="Karawang, Jawa Barat">Karawang, Jawa Barat</option>
-                                <option value="Bandung, Jawa Barat">Bandung, Jawa Barat</option>
-                                <option value="Cirebon, Jawa Barat">Cirebon, Jawa Barat</option>
-                                <option value="Semarang, Jawa Tengah">Semarang, Jawa Tengah</option>
-                                <option value="Solo, Jawa Tengah">Solo, Jawa Tengah</option>
-                                <option value="Yogyakarta, DI Yogyakarta">Yogyakarta, DI Yogyakarta</option>
-                                <option value="Surabaya, Jawa Timur">Surabaya, Jawa Timur</option>
-                                <option value="Sidoarjo, Jawa Timur">Sidoarjo, Jawa Timur</option>
-                                <option value="Gresik, Jawa Timur">Gresik, Jawa Timur</option>
-                                <option value="Malang, Jawa Timur">Malang, Jawa Timur</option>
-                                <option value="Denpasar, Bali">Denpasar, Bali</option>
-                                <option value="Medan, Sumatera Utara">Medan, Sumatera Utara</option>
-                                <option value="Palembang, Sumatera Selatan">Palembang, Sumatera Selatan</option>
-                                <option value="Balikpapan, Kalimantan Timur">Balikpapan, Kalimantan Timur</option>
-                                <option value="Samarinda, Kalimantan Timur">Samarinda, Kalimantan Timur</option>
-                                <option value="Makassar, Sulawesi Selatan">Makassar, Sulawesi Selatan</option>
-                            </select>
-                            @error('project_location')
-                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
 
-                        <div>
-                            <label class="text-sm font-medium">Kondisi Pengiriman *</label>
-                            <select name="delivery_cond"
-                                    class="mt-2 w-full rounded-xl border-slate-200 bg-slate-50">
-                                <option value="">Pilih kondisi pengiriman</option>
-                                <option value="Franco Lokasi">Franco Lokasi</option>
-                                <option value="Pickup">Pickup</option>
-                            </select>
-                            @error('delivery_cond')
-                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                            @enderror
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
+                                <div>
+                                    <select name="project_province"
+                                            id="project_province"
+                                            class="searchable-select w-full rounded-xl border-slate-200 bg-white text-slate-700">
+                                        <option value="">Provinsi</option>
+                                        <option value="DKI Jakarta" {{ old('project_province') == 'DKI Jakarta' ? 'selected' : '' }}>DKI Jakarta</option>
+                                        <option value="Jawa Barat" {{ old('project_province') == 'Jawa Barat' ? 'selected' : '' }}>Jawa Barat</option>
+                                        <option value="Jawa Tengah" {{ old('project_province') == 'Jawa Tengah' ? 'selected' : '' }}>Jawa Tengah</option>
+                                        <option value="Jawa Timur" {{ old('project_province') == 'Jawa Timur' ? 'selected' : '' }}>Jawa Timur</option>
+                                        <option value="Banten" {{ old('project_province') == 'Banten' ? 'selected' : '' }}>Banten</option>
+                                    </select>
+
+                                    @error('project_province')
+                                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <select name="project_city"
+                                            id="project_city"
+                                            class="searchable-select w-full rounded-xl border-slate-200 bg-white text-slate-700">
+                                        <option value="">Kota/Kabupaten</option>
+                                    </select>
+
+                                    @error('project_city')
+                                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <p class="text-xs text-gray-500 mt-1">
+                                Pilih provinsi dan kota/kabupaten lokasi project.
+                            </p>
                         </div>
 
                         <div>
@@ -173,6 +174,7 @@
                             <input type="date"
                                    id="delivery_date"
                                    name="delivery_date"
+                                   value="{{ old('delivery_date') }}"
                                    min="{{ now()->addDays(30)->format('Y-m-d') }}"
                                    class="mt-1 w-full rounded-xl border-slate-200">
 
@@ -184,10 +186,25 @@
                                 <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
+
+                        <div>
+                            <label class="text-sm font-medium">Kondisi Pengiriman *</label>
+                            <select name="delivery_cond"
+                                    class="mt-1 w-full rounded-xl border-slate-200 bg-white text-slate-700">
+                                <option value="">Pilih kondisi pengiriman</option>
+                                <option value="Franco Lokasi" {{ old('delivery_cond') == 'Franco Lokasi' ? 'selected' : '' }}>Franco Lokasi</option>
+                                <option value="Pickup" {{ old('delivery_cond') == 'Pickup' ? 'selected' : '' }}>Pickup</option>
+                            </select>
+
+                            @error('delivery_cond')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
                 </x-ui.card>
             </div>
 
+            {{-- KANAN: DOKUMEN PENDUKUNG, RINGKASAN, ESTIMASI --}}
             <div>
                 <x-ui.card>
                     <h3 class="font-semibold mb-3">Dokumen Pendukung</h3>
@@ -277,6 +294,94 @@
 
     <script>
         let itemIndex = 1;
+
+        const cityData = {
+            "DKI Jakarta": [
+                "Jakarta Pusat",
+                "Jakarta Utara",
+                "Jakarta Barat",
+                "Jakarta Selatan",
+                "Jakarta Timur"
+            ],
+            "Jawa Barat": [
+                "Bandung",
+                "Bekasi",
+                "Bogor",
+                "Depok",
+                "Cirebon",
+                "Karawang"
+            ],
+            "Jawa Tengah": [
+                "Semarang",
+                "Surakarta",
+                "Magelang",
+                "Tegal",
+                "Purwokerto",
+                "Kudus"
+            ],
+            "Jawa Timur": [
+                "Surabaya",
+                "Malang",
+                "Kediri",
+                "Madiun",
+                "Sidoarjo",
+                "Gresik"
+            ],
+            "Banten": [
+                "Tangerang",
+                "Tangerang Selatan",
+                "Serang",
+                "Cilegon"
+            ]
+        };
+
+        const provinceSelect = document.getElementById('project_province');
+        const citySelect = document.getElementById('project_city');
+        const oldCity = @json(old('project_city'));
+
+        function loadCitiesByProvince(selectedProvince, selectedCity = null) {
+            if (!citySelect) {
+                return;
+            }
+
+            let hadTomSelect = false;
+            if (citySelect.tomselect) {
+                hadTomSelect = true;
+                citySelect.tomselect.destroy();
+            }
+
+            citySelect.innerHTML = '<option value="">Kota/Kabupaten</option>';
+
+            if (selectedProvince && cityData[selectedProvince]) {
+                cityData[selectedProvince].forEach(function (city) {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+
+                    if (selectedCity === city) {
+                        option.selected = true;
+                    }
+
+                    citySelect.appendChild(option);
+                });
+            }
+
+            if (hadTomSelect || citySelect.classList.contains('searchable-select')) {
+                if (window.initSearchableSelect) {
+                    window.initSearchableSelect('#project_city');
+                }
+            }
+        }
+
+        if (provinceSelect && citySelect) {
+            provinceSelect.addEventListener('change', function () {
+                loadCitiesByProvince(this.value);
+            });
+
+            if (provinceSelect.value) {
+                loadCitiesByProvince(provinceSelect.value, oldCity);
+            }
+        }
 
         const productsOptions = `
             <option value="">Pilih produk</option>
@@ -389,8 +494,10 @@
 
             updateOrderSummary();
 
-            if (!deliveryDate) {
-                box.classList.add('hidden');
+            if (!box || !deliveryDate) {
+                if (box) {
+                    box.classList.add('hidden');
+                }
                 return;
             }
 
@@ -461,7 +568,9 @@
                 updateOrderSummary();
                 calculatePriceEstimate();
 
-                if (!productId) return;
+                if (!productId) {
+                    return;
+                }
 
                 fetch(`/api/products/${productId}/variants`)
                     .then(response => response.json())
@@ -490,7 +599,9 @@
                 updateOrderSummary();
                 calculatePriceEstimate();
 
-                if (!selectedVariant) return;
+                if (!selectedVariant) {
+                    return;
+                }
 
                 selectedVariant.volumes.forEach(volume => {
                     const option = document.createElement('option');

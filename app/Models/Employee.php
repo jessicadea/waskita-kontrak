@@ -11,6 +11,7 @@ class Employee extends Model
         'supervisor_id',
         'employee_name',
         'position',
+        'gender',
         'status',
     ];
 

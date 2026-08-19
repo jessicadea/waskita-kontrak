@@ -24,6 +24,8 @@ class Order extends Model
         'verify_note',
         'contract_file',
         'requires_acceleration',
+        'project_province',
+        'project_city',
     ];
 
     public function user()

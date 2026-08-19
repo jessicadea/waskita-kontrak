@@ -49,6 +49,8 @@ class OrderController extends Controller
                 $q->where('project_name', 'like', '%' . $search . '%')
                     ->orWhere('company_name', 'like', '%' . $search . '%')
                     ->orWhere('project_location', 'like', '%' . $search . '%')
+                    ->orWhere('project_province', 'like', '%' . $search . '%')
+                    ->orWhere('project_city', 'like', '%' . $search . '%')
                     ->orWhereHas('user', function ($userQuery) use ($search) {
                         $userQuery->where('name', 'like', '%' . $search . '%')
                             ->orWhere('email', 'like', '%' . $search . '%');
@@ -64,11 +66,11 @@ class OrderController extends Controller
         }
 
         if ($request->filled('start_date')) {
-            $query->whereDate('created_at', '>=', $request->start_date);
+            $query->where('created_at', '>=', \Illuminate\Support\Carbon::parse($request->start_date)->startOfDay());
         }
 
         if ($request->filled('end_date')) {
-            $query->whereDate('created_at', '<=', $request->end_date);
+            $query->where('created_at', '<=', \Illuminate\Support\Carbon::parse($request->end_date)->endOfDay());
         }
 
         $orders = $query->latest()->get();
@@ -96,7 +98,10 @@ class OrderController extends Controller
             'company_name' => 'required|string|max:255',
             'company_type' => 'required|string|max:255',
             'project_name' => 'required|string|max:255',
-            'project_location' => 'required|string|max:255',
+
+            'project_province' => 'required|string|max:255',
+            'project_city' => 'required|string|max:255',
+
             'delivery_cond' => 'required|string|max:255',
             'delivery_date' => 'required|date|after_or_equal:' . now()->addDays(30)->format('Y-m-d'),
         ], [
@@ -105,6 +110,8 @@ class OrderController extends Controller
 
         DB::transaction(function () use ($request) {
             $firstItem = $request->items[0];
+
+            $projectLocation = $request->project_city . ', ' . $request->project_province;
 
             $order = Order::create([
                 'user_id' => auth()->id(),
@@ -122,7 +129,14 @@ class OrderController extends Controller
                 'company_name' => $request->company_name,
                 'company_type' => $request->company_type,
                 'project_name' => $request->project_name,
-                'project_location' => $request->project_location,
+
+                // Lokasi project baru
+                'project_province' => $request->project_province,
+                'project_city' => $request->project_city,
+
+                // Kolom lokasi lama tetap diisi otomatis
+                'project_location' => $projectLocation,
+
                 'delivery_cond' => $request->delivery_cond,
                 'delivery_date' => $request->delivery_date,
                 'status_verify' => 'pending',

@@ -11,7 +11,7 @@
             <p><b>Perusahaan:</b> {{ $order->company_name }}</p>
             <p><b>Jenis Perusahaan:</b> {{ $order->company_type }}</p>
             <p><b>Nama Project:</b> {{ $order->project_name }}</p>
-            <p><b>Lokasi:</b> {{ $order->project_location }}</p>
+            <p><b>Lokasi:</b> {{ $order->project_city ?? '-' }}, {{ $order->project_province ?? '-' }}</p>
             <p><b>Kondisi Pengiriman:</b> {{ $order->delivery_cond }}</p>
             <p><b>Tanggal Pengiriman:</b> {{ $order->delivery_date }}</p>
             <p><b>Status:</b> {{ ucfirst($order->status_verify) }}</p>

@@ -1,38 +1,28 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
-
-class UserApprovalController extends Controller
+return new class extends Migration
 {
-    public function index()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
-        $users = User::where('role', 'client')
-            ->latest()
-            ->get();
-
-        return view('admin.users.index', compact('users'));
+        Schema::table('users', function (Blueprint $table) {
+            $table->boolean('is_approved')->default(false)->after('role');
+        });
     }
 
-    public function approve($id)
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
-        $user = User::findOrFail($id);
-
-        $user->update([
-            'is_approved' => true,
-        ]);
-
-        return back()->with('success', 'Akun berhasil disetujui.');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('is_approved');
+        });
     }
-
-    public function reject($id)
-    {
-        $user = User::findOrFail($id);
-
-        $user->delete();
-
-        return back()->with('success', 'Akun berhasil ditolak dan dihapus.');
-    }
-}
+};

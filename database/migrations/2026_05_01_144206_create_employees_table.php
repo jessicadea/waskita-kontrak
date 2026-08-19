@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('supervisor_id')->nullable()->constrained('users')->nullOnDelete();
 
             $table->string('employee_name');
+            $table->string('gender');
             $table->string('position');
             $table->enum('status', ['active', 'inactive'])->default('active');
 

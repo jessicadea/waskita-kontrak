@@ -113,8 +113,9 @@
                                 {{ $order->project_name }}
                             </h3>
 
-                            <p class="text-sm text-gray-500 mt-1">
-                                {{ $order->project_location }}
+                            <p>
+                                <strong>Lokasi Project:</strong>
+                                {{ $order->project_city ?? '-' }}, {{ $order->project_province ?? '-' }}
                             </p>
                         </div>
 

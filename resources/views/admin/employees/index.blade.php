@@ -26,6 +26,7 @@
                         <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nama Pegawai</th>
                         <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
                         <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">No. Telepon</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Gender</th>
                         <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Jabatan</th>
                         <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
                         <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Aksi</th>
@@ -50,6 +51,8 @@
                             <td class="px-4 py-3 text-sm text-gray-700">
                                 {{ $employee->user->phone ?? '-' }}
                             </td>
+                            
+                            <td>{{ $employee->gender ?? '-' }}</td>
 
                             <td class="px-4 py-3 text-sm text-gray-700">
                                 {{ $employee->position ?? '-' }}
